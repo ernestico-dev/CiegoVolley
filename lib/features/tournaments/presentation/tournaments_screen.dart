@@ -4,20 +4,22 @@ import 'package:intl/intl.dart';
 
 import '../../../core/utils/error_messages.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../profile/data/profile_repository.dart';
 import '../data/tournament_repository.dart';
 import '../domain/tournament.dart';
+import 'tournament_form_sheet.dart';
 
 /// Torneos de la plataforma.
 ///
-/// De momento es una vista de solo lectura: la creación y la gestión de
-/// cuadros llegan en la siguiente parte. Los equipos ya pueden inscribirse
-/// desde su pantalla de detalle.
+/// Todo el mundo puede verlos; solo el administrador del club puede crear,
+/// editar y eliminar (el RLS de `tournaments` lo impone en el servidor).
 class TournamentsScreen extends ConsumerWidget {
   const TournamentsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tournaments = ref.watch(tournamentsProvider);
+    final isAdmin = ref.watch(isAdminProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -30,6 +32,13 @@ class TournamentsScreen extends ConsumerWidget {
           ),
         ],
       ),
+      floatingActionButton: isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () => TournamentFormSheet.showCreate(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Nuevo torneo'),
+            )
+          : null,
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(tournamentsProvider.future),
         child: tournaments.when(
@@ -45,21 +54,28 @@ class TournamentsScreen extends ConsumerWidget {
           ),
           data: (list) {
             if (list.isEmpty) {
-              return const EmptyState(
+              return EmptyState(
                 icon: Icons.emoji_events_outlined,
                 title: 'Todavía no hay torneos',
-                message:
-                    'Ejecuta supabase/seed.sql para crear torneos de ejemplo '
-                    'y poder inscribir equipos.',
+                message: isAdmin
+                    ? 'Crea el primer torneo con el botón de abajo.'
+                    : 'El administrador del club todavía no ha creado ninguno.',
               );
             }
 
             return ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
               itemCount: list.length,
               separatorBuilder: (context, index) => const SizedBox(height: 10),
-              itemBuilder: (context, index) =>
-                  _TournamentCard(tournament: list[index]),
+              itemBuilder: (context, index) {
+                final tournament = list[index];
+                return _TournamentCard(
+                  tournament: tournament,
+                  onEdit: isAdmin
+                      ? () => TournamentFormSheet.showEdit(context, tournament)
+                      : null,
+                );
+              },
             );
           },
         ),
@@ -69,9 +85,10 @@ class TournamentsScreen extends ConsumerWidget {
 }
 
 class _TournamentCard extends StatelessWidget {
-  const _TournamentCard({required this.tournament});
+  const _TournamentCard({required this.tournament, this.onEdit});
 
   final Tournament tournament;
+  final VoidCallback? onEdit;
 
   @override
   Widget build(BuildContext context) {
@@ -86,44 +103,54 @@ class _TournamentCard extends StatelessWidget {
     };
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CircleAvatar(
-              radius: 24,
-              backgroundColor: theme.colorScheme.tertiaryContainer,
-              foregroundColor: theme.colorScheme.onTertiaryContainer,
-              child: const Icon(Icons.emoji_events_outlined),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    tournament.name,
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    [
-                      if (tournament.venue != null) tournament.venue!,
-                      dates,
-                    ].join(' · '),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  _StatusChip(status: tournament.status),
-                ],
+      child: InkWell(
+        onTap: onEdit,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: theme.colorScheme.tertiaryContainer,
+                foregroundColor: theme.colorScheme.onTertiaryContainer,
+                child: const Icon(Icons.emoji_events_outlined),
               ),
-            ),
-          ],
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tournament.name,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      [
+                        if (tournament.venue != null) tournament.venue!,
+                        dates,
+                      ].join(' · '),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    _StatusChip(status: tournament.status),
+                  ],
+                ),
+              ),
+              if (onEdit != null)
+                IconButton(
+                  tooltip: 'Editar torneo',
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEdit,
+                ),
+            ],
+          ),
         ),
       ),
     );

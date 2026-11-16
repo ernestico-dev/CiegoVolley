@@ -6,6 +6,9 @@ import '../../../core/utils/validators.dart';
 import '../data/team_repository.dart';
 import '../domain/team.dart';
 
+/// Qué ocurrió al cerrar la hoja de equipo.
+enum TeamFormResult { saved, deleted }
+
 /// Hoja para crear o editar un equipo.
 ///
 /// Solo el creador llega aquí en modo edición; el RLS de `teams` lo garantiza
@@ -15,8 +18,8 @@ class TeamFormSheet extends ConsumerStatefulWidget {
 
   final Team? team;
 
-  static Future<bool?> showCreate(BuildContext context) {
-    return showModalBottomSheet<bool>(
+  static Future<TeamFormResult?> showCreate(BuildContext context) {
+    return showModalBottomSheet<TeamFormResult>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -24,8 +27,8 @@ class TeamFormSheet extends ConsumerStatefulWidget {
     );
   }
 
-  static Future<bool?> showEdit(BuildContext context, Team team) {
-    return showModalBottomSheet<bool>(
+  static Future<TeamFormResult?> showEdit(BuildContext context, Team team) {
+    return showModalBottomSheet<TeamFormResult>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
@@ -103,7 +106,7 @@ class _TeamFormSheetState extends ConsumerState<TeamFormSheet> {
       }
 
       ref.invalidate(teamsProvider);
-      if (mounted) Navigator.of(context).pop(true);
+      if (mounted) Navigator.of(context).pop(TeamFormResult.saved);
     } catch (error) {
       if (mounted) {
         setState(() {
@@ -111,6 +114,51 @@ class _TeamFormSheetState extends ConsumerState<TeamFormSheet> {
           _error = friendlyErrorMessage(error);
         });
       }
+    }
+  }
+
+  Future<void> _delete() async {
+    final team = widget.team;
+    if (team == null) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Eliminar equipo?'),
+        content: Text(
+          'Se borrará «${team.name}» con sus integrantes e inscripciones en '
+          'torneos. Esta acción no se puede deshacer.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Eliminar'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(teamRepositoryProvider).deleteTeam(team.id);
+      ref.invalidate(teamsProvider);
+      if (mounted) Navigator.of(context).pop(TeamFormResult.deleted);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _error = friendlyErrorMessage(error);
+      });
     }
   }
 
@@ -188,6 +236,17 @@ class _TeamFormSheetState extends ConsumerState<TeamFormSheet> {
                     )
                   : Text(_isEditing ? 'Guardar cambios' : 'Guardar equipo'),
             ),
+            if (_isEditing) ...[
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: _saving ? null : _delete,
+                icon: const Icon(Icons.delete_outline),
+                label: const Text('Eliminar equipo'),
+                style: TextButton.styleFrom(
+                  foregroundColor: theme.colorScheme.error,
+                ),
+              ),
+            ],
           ],
         ),
       ),

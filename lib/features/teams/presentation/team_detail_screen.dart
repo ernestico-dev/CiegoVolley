@@ -48,7 +48,12 @@ class TeamDetailScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'Editar equipo',
               icon: const Icon(Icons.edit_outlined),
-              onPressed: () => TeamFormSheet.showEdit(context, team),
+              onPressed: () async {
+                final result = await TeamFormSheet.showEdit(context, team);
+                if (result == TeamFormResult.deleted && context.mounted) {
+                  Navigator.of(context).pop();
+                }
+              },
             ),
         ],
       ),

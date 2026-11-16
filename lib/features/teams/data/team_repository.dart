@@ -90,6 +90,11 @@ class TeamRepository {
         .eq('id', id);
   }
 
+  /// Solo el creador puede eliminar el equipo (lo impone RLS).
+  Future<void> deleteTeam(String id) async {
+    await _client.from('teams').delete().eq('id', id);
+  }
+
   Future<List<TeamMember>> fetchMembers(String teamId) async {
     final rows = await _client
         .from('team_members')
