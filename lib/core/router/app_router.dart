@@ -9,6 +9,7 @@ import '../../features/matches/presentation/match_mode_screen.dart';
 import '../../features/matches/presentation/match_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
+import '../../features/stats/presentation/my_stats_screen.dart';
 import '../../features/teams/presentation/team_detail_screen.dart';
 import '../../features/teams/presentation/teams_screen.dart';
 import '../../features/tournaments/presentation/tournament_detail_screen.dart';
@@ -102,6 +103,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.profile,
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'estadisticas',
+                    builder: (context, state) => const MyStatsScreen(),
+                  ),
+                ],
               ),
             ],
           ),

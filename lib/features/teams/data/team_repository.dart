@@ -121,7 +121,8 @@ class TeamRepository {
         .from('team_members')
         .select(
           'role, joined_at, '
-          'profile:profiles!team_members_user_id_fkey(id, full_name, email)',
+          'profile:profiles!team_members_user_id_fkey'
+          '(id, full_name, email, avatar_url)',
         )
         .eq('team_id', teamId)
         .order('joined_at');
@@ -142,7 +143,7 @@ class TeamRepository {
 
     var filter = _client
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, email, avatar_url')
         .ilike('full_name', '%${_escapeLike(term)}%');
 
     if (excludeUserIds.isNotEmpty) {

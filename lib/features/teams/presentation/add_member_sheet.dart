@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/profile_summary.dart';
 import '../../../core/utils/error_messages.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../data/team_repository.dart';
 
 /// Selector de usuarios registrados para añadir a un equipo.
@@ -250,14 +251,16 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
           color: selected ? theme.colorScheme.primaryContainer : null,
           child: ListTile(
             selected: selected,
-            leading: CircleAvatar(
+            leading: UserAvatar(
+              name: profile.displayName,
+              avatarUrl: profile.avatarUrl,
+              radius: 20,
               backgroundColor: selected
                   ? theme.colorScheme.onPrimaryContainer
                   : theme.colorScheme.secondaryContainer,
               foregroundColor: selected
                   ? theme.colorScheme.primaryContainer
                   : theme.colorScheme.onSecondaryContainer,
-              child: Text(_initials(profile.displayName)),
             ),
             title: Text(
               profile.displayName,
@@ -275,12 +278,6 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
         );
       },
     );
-  }
-
-  static String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    final letters = parts.take(2).map((p) => p[0].toUpperCase()).join();
-    return letters.isEmpty ? '?' : letters;
   }
 }
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/user_avatar.dart';
+
 import '../../../teams/domain/team_member.dart';
 import '../../domain/match_action.dart';
 import '../../domain/match_draft.dart';
@@ -45,17 +47,10 @@ class PlayerStatsPanel extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
+                UserAvatar(
+                  name: player.displayName,
+                  avatarUrl: player.avatarUrl,
                   radius: 16,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  foregroundColor: theme.colorScheme.onPrimaryContainer,
-                  child: Text(
-                    _initials(player.displayName),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -113,12 +108,6 @@ class PlayerStatsPanel extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  static String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    final letters = parts.take(2).map((p) => p[0].toUpperCase()).join();
-    return letters.isEmpty ? '?' : letters;
   }
 }
 

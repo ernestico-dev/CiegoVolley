@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/user_avatar.dart';
 import '../../tournaments/domain/team_tournament.dart';
 import '../data/team_repository.dart';
 import '../domain/team.dart';
@@ -312,10 +313,12 @@ class _MembersSection extends ConsumerWidget {
               for (var i = 0; i < list.length; i++) ...[
                 if (i > 0) const Divider(height: 1),
                 ListTile(
-                  leading: CircleAvatar(
+                  leading: UserAvatar(
+                    name: list[i].displayName,
+                    avatarUrl: list[i].avatarUrl,
+                    radius: 20,
                     backgroundColor: theme.colorScheme.secondaryContainer,
                     foregroundColor: theme.colorScheme.onSecondaryContainer,
-                    child: Text(_initials(list[i].displayName)),
                   ),
                   title: Text(
                     list[i].displayName,
@@ -336,12 +339,6 @@ class _MembersSection extends ConsumerWidget {
         );
       },
     );
-  }
-
-  static String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    final letters = parts.take(2).map((p) => p[0].toUpperCase()).join();
-    return letters.isEmpty ? '?' : letters;
   }
 }
 

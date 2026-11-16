@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/user_avatar.dart';
+
 import '../../../teams/domain/team_member.dart';
 import '../../domain/match_draft.dart';
 
@@ -142,7 +144,9 @@ class _PlayerSlot extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                CircleAvatar(
+                UserAvatar(
+                  name: player.displayName,
+                  avatarUrl: player.avatarUrl,
                   radius: 12,
                   backgroundColor: selected
                       ? theme.colorScheme.primary
@@ -150,13 +154,6 @@ class _PlayerSlot extends StatelessWidget {
                   foregroundColor: selected
                       ? theme.colorScheme.onPrimary
                       : Colors.white,
-                  child: Text(
-                    _initials(player.displayName),
-                    style: const TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -183,12 +180,6 @@ class _PlayerSlot extends StatelessWidget {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return '?';
     return trimmed.split(RegExp(r'\s+')).first;
-  }
-
-  static String _initials(String value) {
-    final parts = value.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
-    final letters = parts.take(2).map((p) => p[0].toUpperCase()).join();
-    return letters.isEmpty ? '?' : letters;
   }
 }
 
