@@ -7,6 +7,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../teams/data/team_repository.dart';
+import '../../tournaments/data/tournament_repository.dart';
 
 /// Pantalla principal con resumen y accesos rápidos.
 class HomeScreen extends ConsumerWidget {
@@ -17,6 +18,7 @@ class HomeScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final user = ref.watch(currentUserProvider);
     final teams = ref.watch(teamsProvider);
+    final tournaments = ref.watch(tournamentsProvider);
 
     final metadata = user?.userMetadata ?? const <String, dynamic>{};
     final fullName = (metadata['full_name'] as String?)?.trim();
@@ -72,11 +74,15 @@ class HomeScreen extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: _StatCard(
                   icon: Icons.emoji_events_rounded,
                   label: 'Torneos',
-                  value: '—',
+                  value: tournaments.when(
+                    data: (list) => '${list.length}',
+                    loading: () => '—',
+                    error: (error, stackTrace) => '—',
+                  ),
                 ),
               ),
             ],
@@ -113,42 +119,6 @@ class HomeScreen extends ConsumerWidget {
                   onTap: () => context.go(AppRoutes.profile),
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: 24),
-          Card(
-            color: theme.colorScheme.primaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.sports_volleyball,
-                        color: theme.colorScheme.onPrimaryContainer,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Siguiente paso',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.onPrimaryContainer,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Crea tu primer equipo y luego revisa el esquema SQL en '
-                    'supabase/migrations para ver el modelo de datos.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ],
-              ),
             ),
           ),
         ],

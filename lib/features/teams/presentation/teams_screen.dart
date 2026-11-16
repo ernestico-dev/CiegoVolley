@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../core/router/app_routes.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../data/team_repository.dart';
 import '../domain/team.dart';
-import 'create_team_sheet.dart';
+import 'team_form_sheet.dart';
 
 /// Lista de equipos del club.
 class TeamsScreen extends ConsumerWidget {
@@ -27,7 +29,7 @@ class TeamsScreen extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => CreateTeamSheet.show(context),
+        onPressed: () => TeamFormSheet.showCreate(context),
         icon: const Icon(Icons.add),
         label: const Text('Nuevo equipo'),
       ),
@@ -51,7 +53,7 @@ class TeamsScreen extends ConsumerWidget {
                 title: 'Todavía no hay equipos',
                 message:
                     'Crea el primer equipo con el botón de abajo. '
-                    'Después podrás añadir jugadores y plantillas.',
+                    'Después podrás añadir integrantes e inscribirlo en torneos.',
               );
             }
 
@@ -101,11 +103,7 @@ class _TeamCard extends StatelessWidget {
           ].join(' · '),
         ),
         trailing: const Icon(Icons.chevron_right),
-        onTap: () {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Detalle de ${team.name} próximamente')),
-          );
-        },
+        onTap: () => context.push(AppRoutes.teamDetail(team.id)),
       ),
     );
   }

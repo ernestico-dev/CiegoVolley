@@ -4,30 +4,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/utils/validators.dart';
 import '../data/team_repository.dart';
+import '../domain/team.dart';
 
-/// Hoja para registrar un equipo nuevo.
-class CreateTeamSheet extends ConsumerStatefulWidget {
-  const CreateTeamSheet({super.key});
+/// Hoja para crear o editar un equipo.
+///
+/// Solo el creador llega aquí en modo edición; el RLS de `teams` lo garantiza
+/// también en el servidor.
+class TeamFormSheet extends ConsumerStatefulWidget {
+  const TeamFormSheet({super.key, this.team});
 
-  static Future<bool?> show(BuildContext context) {
+  final Team? team;
+
+  static Future<bool?> showCreate(BuildContext context) {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => const CreateTeamSheet(),
+      builder: (context) => const TeamFormSheet(),
+    );
+  }
+
+  static Future<bool?> showEdit(BuildContext context, Team team) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) => TeamFormSheet(team: team),
     );
   }
 
   @override
-  ConsumerState<CreateTeamSheet> createState() => _CreateTeamSheetState();
+  ConsumerState<TeamFormSheet> createState() => _TeamFormSheetState();
 }
 
-class _CreateTeamSheetState extends ConsumerState<CreateTeamSheet> {
+class _TeamFormSheetState extends ConsumerState<TeamFormSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _nameController = TextEditingController();
-  final _seasonController = TextEditingController();
+  late final TextEditingController _nameController;
+  late final TextEditingController _seasonController;
 
-  String _category = 'Senior';
+  late String _category;
   bool _saving = false;
   String? _error;
 
@@ -38,6 +53,19 @@ class _CreateTeamSheetState extends ConsumerState<CreateTeamSheet> {
     'Infantil',
     'Alevín',
   ];
+
+  bool get _isEditing => widget.team != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final team = widget.team;
+    _nameController = TextEditingController(text: team?.name ?? '');
+    _seasonController = TextEditingController(text: team?.season ?? '');
+    _category = _categories.contains(team?.category)
+        ? team!.category
+        : _categories.first;
+  }
 
   @override
   void dispose() {
@@ -54,14 +82,26 @@ class _CreateTeamSheetState extends ConsumerState<CreateTeamSheet> {
       _error = null;
     });
 
+    final repository = ref.read(teamRepositoryProvider);
+
     try {
-      await ref
-          .read(teamRepositoryProvider)
-          .createTeam(
-            name: _nameController.text,
-            category: _category,
-            season: _seasonController.text,
-          );
+      final team = widget.team;
+      if (team == null) {
+        await repository.createTeam(
+          name: _nameController.text,
+          category: _category,
+          season: _seasonController.text,
+        );
+      } else {
+        await repository.updateTeam(
+          id: team.id,
+          name: _nameController.text,
+          category: _category,
+          season: _seasonController.text,
+        );
+        ref.invalidate(teamProvider(team.id));
+      }
+
       ref.invalidate(teamsProvider);
       if (mounted) Navigator.of(context).pop(true);
     } catch (error) {
@@ -92,7 +132,7 @@ class _CreateTeamSheetState extends ConsumerState<CreateTeamSheet> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text(
-              'Nuevo equipo',
+              _isEditing ? 'Editar equipo' : 'Nuevo equipo',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w700,
               ),
@@ -101,7 +141,7 @@ class _CreateTeamSheetState extends ConsumerState<CreateTeamSheet> {
             TextFormField(
               controller: _nameController,
               textCapitalization: TextCapitalization.words,
-              autofocus: true,
+              autofocus: !_isEditing,
               decoration: const InputDecoration(
                 labelText: 'Nombre del equipo',
                 prefixIcon: Icon(Icons.groups_outlined),
@@ -146,7 +186,7 @@ class _CreateTeamSheetState extends ConsumerState<CreateTeamSheet> {
                       width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Guardar equipo'),
+                  : Text(_isEditing ? 'Guardar cambios' : 'Guardar equipo'),
             ),
           ],
         ),
