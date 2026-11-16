@@ -1,3 +1,20 @@
+import '../../matches/domain/match_action.dart';
+
+/// Aciertos y fallos de una acción concreta.
+class ActionTally {
+  const ActionTally({this.successes = 0, this.failures = 0});
+
+  final int successes;
+  final int failures;
+
+  int get total => successes + failures;
+
+  int get successPercent {
+    if (total == 0) return 0;
+    return (successes * 100 / total).round();
+  }
+}
+
 /// Estadísticas acumuladas de un jugador en toda la plataforma.
 class PlayerStats {
   const PlayerStats({
@@ -8,6 +25,7 @@ class PlayerStats {
     required this.matchesPlayed,
     required this.matchesWon,
     required this.tournaments,
+    this.actions = const {},
   });
 
   final String userId;
@@ -18,6 +36,9 @@ class PlayerStats {
   final int matchesWon;
   final int tournaments;
 
+  /// Aciertos y fallos por fundamento.
+  final Map<MatchAction, ActionTally> actions;
+
   int get attempts => successes + failures;
 
   /// Porcentaje de aciertos (0–100). Sin intentos vale 0.
@@ -27,6 +48,30 @@ class PlayerStats {
   }
 
   double get successRate => attempts == 0 ? 0 : successes / attempts;
+
+  ActionTally tallyFor(MatchAction action) {
+    return actions[action] ?? const ActionTally();
+  }
+
+  /// Fundamento con mejor porcentaje (con al menos un intento).
+  MatchAction? get bestAction {
+    MatchAction? best;
+    for (final action in MatchAction.values) {
+      final tally = tallyFor(action);
+      if (tally.total == 0) continue;
+      if (best == null) {
+        best = action;
+        continue;
+      }
+      final current = tallyFor(best);
+      if (tally.successPercent > current.successPercent ||
+          (tally.successPercent == current.successPercent &&
+              tally.successes > current.successes)) {
+        best = action;
+      }
+    }
+    return best;
+  }
 
   /// Intentos mínimos para entrar en el ranking por porcentaje.
   static const minAttempts = 3;

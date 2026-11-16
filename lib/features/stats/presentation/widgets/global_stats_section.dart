@@ -8,7 +8,8 @@ import '../../data/stats_repository.dart';
 import '../../domain/action_leader.dart';
 import '../../domain/global_stats.dart';
 import '../../domain/player_stats.dart';
-import 'donut_chart.dart';
+import 'action_colors.dart';
+import 'player_stats_carousel.dart';
 
 /// Estadísticas globales del club: donas, rankings y mejores por acción.
 class GlobalStatsSection extends ConsumerWidget {
@@ -116,7 +117,7 @@ class _StatsBody extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _ChartsRow(stats: stats),
+        PlayerStatsCarousel(players: stats.players),
         const SizedBox(height: 16),
         _Leaderboard(players: stats.players),
         const SizedBox(height: 16),
@@ -128,226 +129,7 @@ class _StatsBody extends StatelessWidget {
   }
 }
 
-class _ChartsRow extends StatelessWidget {
-  const _ChartsRow({required this.stats});
-
-  final GlobalStats stats;
-
-  @override
-  Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 16, 12, 12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: _ChartBlock(
-                    title: 'Aciertos y fallos',
-                    donut: DonutChart(
-                      slices: [
-                        DonutSlice(
-                          label: 'Aciertos',
-                          value: stats.totalSuccesses,
-                          color: scheme.primary,
-                        ),
-                        DonutSlice(
-                          label: 'Fallos',
-                          value: stats.totalFailures,
-                          color: scheme.error,
-                        ),
-                      ],
-                      centerValue: '${stats.successPercent}%',
-                      centerLabel: 'éxito',
-                    ),
-                    legend: [
-                      _LegendItem(
-                        color: scheme.primary,
-                        label: 'Aciertos',
-                        value: '${stats.totalSuccesses}',
-                      ),
-                      _LegendItem(
-                        color: scheme.error,
-                        label: 'Fallos',
-                        value: '${stats.totalFailures}',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _ChartBlock(
-                    title: 'Acciones',
-                    donut: DonutChart(
-                      slices: [
-                        for (final action in MatchAction.values)
-                          DonutSlice(
-                            label: action.label,
-                            value: stats.actionTotals[action] ?? 0,
-                            color: _actionColor(scheme, action),
-                          ),
-                      ],
-                      centerValue: '${stats.totalActions}',
-                      centerLabel: 'acciones',
-                    ),
-                    legend: [
-                      for (final action in MatchAction.values)
-                        _LegendItem(
-                          color: _actionColor(scheme, action),
-                          label: action.label,
-                          value: '${stats.actionTotals[action] ?? 0}',
-                        ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _MiniStat(
-                  icon: Icons.sports_volleyball_outlined,
-                  label: 'Partidos',
-                  value: '${stats.matchCount}',
-                ),
-                _MiniStat(
-                  icon: Icons.emoji_events_outlined,
-                  label: 'Torneos',
-                  value: '${stats.tournamentCount}',
-                ),
-                _MiniStat(
-                  icon: Icons.groups_outlined,
-                  label: 'Jugadores',
-                  value: '${stats.players.length}',
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChartBlock extends StatelessWidget {
-  const _ChartBlock({
-    required this.title,
-    required this.donut,
-    required this.legend,
-  });
-
-  final String title;
-  final Widget donut;
-  final List<Widget> legend;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      children: [
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: theme.textTheme.labelLarge?.copyWith(
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        const SizedBox(height: 8),
-        donut,
-        const SizedBox(height: 8),
-        ...legend,
-      ],
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  const _LegendItem({
-    required this.color,
-    required this.label,
-    required this.value,
-  });
-
-  final Color color;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 1),
-      child: Row(
-        children: [
-          Container(
-            height: 9,
-            width: 9,
-            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-          ),
-          const SizedBox(width: 6),
-          Expanded(
-            child: Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall,
-            ),
-          ),
-          Text(
-            value,
-            style: theme.textTheme.labelSmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _MiniStat extends StatelessWidget {
-  const _MiniStat({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Column(
-      children: [
-        Icon(icon, size: 18, color: theme.colorScheme.primary),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Text(
-          label,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
+/// Carrusel con las estadísticas de cada jugador registrado.
 class _Leaderboard extends ConsumerWidget {
   const _Leaderboard({required this.players});
 
@@ -545,7 +327,7 @@ class _LeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final color = _actionColor(theme.colorScheme, action);
+    final color = actionColor(theme.colorScheme, action);
 
     return Card(
       child: Padding(
@@ -665,13 +447,4 @@ class _BestTeamCard extends StatelessWidget {
       ),
     );
   }
-}
-
-Color _actionColor(ColorScheme scheme, MatchAction action) {
-  return switch (action) {
-    MatchAction.serve => scheme.primary,
-    MatchAction.attack => scheme.tertiary,
-    MatchAction.defense => scheme.secondary,
-    MatchAction.block => scheme.error,
-  };
 }

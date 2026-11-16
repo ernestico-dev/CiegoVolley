@@ -128,6 +128,14 @@ class StatsRepository {
                 matchesPlayed: p.matchesPlayed,
                 matchesWon: p.matchesWon,
                 tournaments: p.tournaments.length,
+                actions: {
+                  for (final action in MatchAction.values)
+                    if (actionByPlayer[action]!.containsKey(p.userId))
+                      action: ActionTally(
+                        successes: actionByPlayer[action]![p.userId]!.successes,
+                        failures: actionByPlayer[action]![p.userId]!.failures,
+                      ),
+                },
               ),
             )
             .toList()

@@ -58,6 +58,27 @@ void main() {
 
       expect(list.first.name, 'Beto');
     });
+
+    test('elige como mejor fundamento el de mayor porcentaje', () {
+      const stats = PlayerStats(
+        userId: 'u1',
+        name: 'Ana',
+        successes: 8,
+        failures: 2,
+        matchesPlayed: 2,
+        matchesWon: 1,
+        tournaments: 1,
+        actions: {
+          MatchAction.serve: ActionTally(successes: 1, failures: 1),
+          MatchAction.attack: ActionTally(successes: 4, failures: 1),
+          MatchAction.defense: ActionTally(successes: 3, failures: 0),
+        },
+      );
+
+      expect(stats.bestAction, MatchAction.defense);
+      expect(stats.tallyFor(MatchAction.attack).successPercent, 80);
+      expect(stats.tallyFor(MatchAction.block).total, 0);
+    });
   });
 
   group('ActionLeader', () {

@@ -7,6 +7,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../../core/utils/error_messages.dart';
+import '../../stats/data/stats_repository.dart';
 import '../../stats/presentation/widgets/global_stats_section.dart';
 import '../../teams/data/team_repository.dart';
 import '../../tournaments/data/tournament_repository.dart';
@@ -22,6 +23,7 @@ class HomeScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final teams = ref.watch(teamsProvider);
     final tournaments = ref.watch(tournamentsProvider);
+    final stats = ref.watch(globalStatsProvider);
 
     final metadata = user?.userMetadata ?? const <String, dynamic>{};
     final fullName = (metadata['full_name'] as String?)?.trim();
@@ -83,6 +85,18 @@ class HomeScreen extends ConsumerWidget {
                   label: 'Torneos',
                   value: tournaments.when(
                     data: (list) => '${list.length}',
+                    loading: () => '—',
+                    error: (error, stackTrace) => '—',
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _StatCard(
+                  icon: Icons.sports_volleyball_rounded,
+                  label: 'Partidos',
+                  value: stats.when(
+                    data: (data) => '${data.matchCount}',
                     loading: () => '—',
                     error: (error, stackTrace) => '—',
                   ),
@@ -286,7 +300,7 @@ class _StatCard extends StatelessWidget {
 
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.all(14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -301,6 +315,8 @@ class _StatCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
               ),
