@@ -1,34 +1,39 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/profile_summary.dart';
 import '../../../core/utils/error_messages.dart';
-import '../../../core/utils/validators.dart';
 import '../data/team_repository.dart';
 
-/// Busca un usuario registrado por correo y lo añade al equipo.
+/// Selector de usuarios registrados para añadir a un equipo.
 ///
+/// Se busca por nombre mientras se escribe y se elige una persona de la lista.
 /// Solo el creador del equipo puede abrir esta hoja.
 class AddMemberSheet extends ConsumerStatefulWidget {
   const AddMemberSheet({
     super.key,
     required this.teamId,
-    required this.ownerId,
+    required this.excludeUserIds,
   });
 
   final String teamId;
-  final String ownerId;
+
+  /// Creador y personas que ya están en el equipo: no aparecen en el selector.
+  final Set<String> excludeUserIds;
 
   static Future<bool?> show(
     BuildContext context, {
     required String teamId,
-    required String ownerId,
+    required Set<String> excludeUserIds,
   }) {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       showDragHandle: true,
-      builder: (context) => AddMemberSheet(teamId: teamId, ownerId: ownerId),
+      builder: (context) =>
+          AddMemberSheet(teamId: teamId, excludeUserIds: excludeUserIds),
     );
   }
 
@@ -37,52 +42,79 @@ class AddMemberSheet extends ConsumerStatefulWidget {
 }
 
 class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
+  static const _debounce = Duration(milliseconds: 300);
 
-  ProfileSummary? _found;
+  final _controller = TextEditingController();
+  final _focusNode = FocusNode();
+
+  Timer? _timer;
+  List<ProfileSummary> _results = const [];
+  ProfileSummary? _selected;
   bool _searching = false;
   bool _adding = false;
-  bool _searched = false;
   String? _error;
+
+  /// Descarta respuestas que llegan tarde (búsquedas que ya no importan).
+  int _requestId = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onChanged);
+  }
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _timer?.cancel();
+    _controller
+      ..removeListener(_onChanged)
+      ..dispose();
+    _focusNode.dispose();
     super.dispose();
   }
 
-  Future<void> _search() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    FocusManager.instance.primaryFocus?.unfocus();
+  void _onChanged() {
+    final term = _controller.text.trim();
+
+    if (term == _selected?.displayName) return;
+
+    setState(() => _selected = null);
+    _timer?.cancel();
+
+    if (term.length < 2) {
+      _requestId++;
+      setState(() {
+        _results = const [];
+        _searching = false;
+        _error = null;
+      });
+      return;
+    }
 
     setState(() {
       _searching = true;
-      _searched = false;
-      _found = null;
       _error = null;
     });
+    _timer = Timer(_debounce, () => _search(term));
+  }
+
+  Future<void> _search(String term) async {
+    final requestId = ++_requestId;
 
     try {
-      final profile = await ref
+      final results = await ref
           .read(teamRepositoryProvider)
-          .findProfileByEmail(_emailController.text);
+          .searchProfiles(term, excludeUserIds: widget.excludeUserIds);
 
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
+        _results = results;
         _searching = false;
-        _searched = true;
-        _found = profile;
-        if (profile == null) {
-          _error = 'No hay ningún usuario registrado con ese correo.';
-        } else if (profile.id == widget.ownerId) {
-          _error = 'Ese usuario es el creador del equipo.';
-          _found = null;
-        }
       });
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestId != _requestId) return;
       setState(() {
+        _results = const [];
         _searching = false;
         _error = friendlyErrorMessage(error);
       });
@@ -90,7 +122,7 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
   }
 
   Future<void> _add() async {
-    final profile = _found;
+    final profile = _selected;
     if (profile == null) return;
 
     setState(() {
@@ -116,101 +148,132 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final busy = _searching || _adding;
+    final term = _controller.text.trim();
 
-    return Padding(
+    return SingleChildScrollView(
       padding: EdgeInsets.only(
         left: 24,
         right: 24,
         top: 8,
         bottom: 24 + MediaQuery.viewInsetsOf(context).bottom,
       ),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              'Añadir integrante',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Añadir integrante',
+            style: theme.textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Debe tener una cuenta registrada en CiegoVolley.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Busca por nombre entre los usuarios registrados en CiegoVolley.',
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.search,
-              autofocus: true,
-              decoration: InputDecoration(
-                labelText: 'Correo del integrante',
-                prefixIcon: const Icon(Icons.alternate_email),
-                suffixIcon: IconButton(
-                  tooltip: 'Buscar',
-                  onPressed: busy ? null : _search,
-                  icon: const Icon(Icons.search),
-                ),
-              ),
-              validator: Validators.email,
-              onFieldSubmitted: (_) {
-                if (!busy) _search();
-              },
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            autofocus: true,
+            textCapitalization: TextCapitalization.words,
+            textInputAction: TextInputAction.search,
+            decoration: InputDecoration(
+              labelText: 'Nombre del integrante',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: term.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Limpiar',
+                      onPressed: () {
+                        _controller.clear();
+                        _focusNode.requestFocus();
+                      },
+                      icon: const Icon(Icons.close),
+                    ),
             ),
-            if (_searching) ...[
-              const SizedBox(height: 16),
-              const Center(child: CircularProgressIndicator()),
-            ],
-            if (_found != null) ...[
-              const SizedBox(height: 16),
-              Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: theme.colorScheme.primaryContainer,
-                    foregroundColor: theme.colorScheme.onPrimaryContainer,
-                    child: Text(_initials(_found!.displayName)),
-                  ),
-                  title: Text(
-                    _found!.displayName,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  subtitle: Text(_found!.email),
-                ),
-              ),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _adding ? null : _add,
-                icon: _adding
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.person_add_alt_1),
-                label: const Text('Añadir al equipo'),
-              ),
-            ],
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
-            ],
-            if (_searched && _found == null && _error == null) ...[
-              const SizedBox(height: 12),
-              Text(
-                'Sin resultados.',
-                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(height: 260, child: _buildResults(theme, term)),
+          if (_error != null) ...[
+            const SizedBox(height: 8),
+            Text(_error!, style: TextStyle(color: theme.colorScheme.error)),
           ],
-        ),
+          const SizedBox(height: 12),
+          FilledButton.icon(
+            onPressed: _selected == null || _adding ? null : _add,
+            icon: _adding
+                ? const SizedBox(
+                    height: 18,
+                    width: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.person_add_alt_1),
+            label: const Text('Añadir al equipo'),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildResults(ThemeData theme, String term) {
+    if (_searching) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (term.length < 2) {
+      return _Hint(
+        icon: Icons.keyboard_outlined,
+        text: 'Escribe al menos dos letras del nombre.',
+      );
+    }
+
+    if (_results.isEmpty) {
+      return _Hint(
+        icon: Icons.person_search_outlined,
+        text: 'No hay usuarios que coincidan con «$term».',
+      );
+    }
+
+    return ListView.separated(
+      itemCount: _results.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 6),
+      itemBuilder: (context, index) {
+        final profile = _results[index];
+        final selected = profile.id == _selected?.id;
+
+        return Card(
+          margin: EdgeInsets.zero,
+          color: selected ? theme.colorScheme.primaryContainer : null,
+          child: ListTile(
+            selected: selected,
+            leading: CircleAvatar(
+              backgroundColor: selected
+                  ? theme.colorScheme.onPrimaryContainer
+                  : theme.colorScheme.secondaryContainer,
+              foregroundColor: selected
+                  ? theme.colorScheme.primaryContainer
+                  : theme.colorScheme.onSecondaryContainer,
+              child: Text(_initials(profile.displayName)),
+            ),
+            title: Text(
+              profile.displayName,
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            subtitle: Text(profile.email),
+            trailing: selected
+                ? const Icon(Icons.check_circle, size: 20)
+                : null,
+            onTap: () {
+              FocusScope.of(context).unfocus();
+              setState(() => _selected = profile);
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -218,5 +281,34 @@ class _AddMemberSheetState extends ConsumerState<AddMemberSheet> {
     final parts = value.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty);
     final letters = parts.take(2).map((p) => p[0].toUpperCase()).join();
     return letters.isEmpty ? '?' : letters;
+  }
+}
+
+class _Hint extends StatelessWidget {
+  const _Hint({required this.icon, required this.text});
+
+  final IconData icon;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 32, color: theme.colorScheme.onSurfaceVariant),
+          const SizedBox(height: 8),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

@@ -33,6 +33,13 @@ class TeamDetailScreen extends ConsumerWidget {
         entry.tournament.id,
     };
 
+    final memberIds = {
+      for (final member
+          in ref.watch(teamMembersProvider(teamId)).asData?.value ??
+              const <TeamMember>[])
+        member.userId,
+    };
+
     return Scaffold(
       appBar: AppBar(
         title: Text(team?.name ?? 'Equipo'),
@@ -75,7 +82,7 @@ class TeamDetailScreen extends ConsumerWidget {
                         onPressed: () => AddMemberSheet.show(
                           context,
                           teamId: teamId,
-                          ownerId: team.ownerId,
+                          excludeUserIds: {...memberIds, team.ownerId},
                         ),
                         icon: const Icon(Icons.person_add_alt_1),
                         label: const Text('Añadir'),

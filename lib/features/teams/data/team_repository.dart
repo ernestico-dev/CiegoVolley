@@ -103,14 +103,28 @@ class TeamRepository {
     return rows.map(TeamMember.fromMap).toList();
   }
 
-  Future<ProfileSummary?> findProfileByEmail(String email) async {
-    final row = await _client
+  /// Busca usuarios registrados por nombre, para el selector de integrantes.
+  ///
+  /// `excludeUserIds` deja fuera al creador y a quienes ya están en el equipo.
+  Future<List<ProfileSummary>> searchProfiles(
+    String query, {
+    Set<String> excludeUserIds = const {},
+    int limit = 10,
+  }) async {
+    final term = query.trim();
+    if (term.length < 2) return const [];
+
+    var filter = _client
         .from('profiles')
         .select('id, full_name, email')
-        .eq('email', email.trim().toLowerCase())
-        .maybeSingle();
+        .ilike('full_name', '%${_escapeLike(term)}%');
 
-    return row == null ? null : ProfileSummary.fromMap(row);
+    if (excludeUserIds.isNotEmpty) {
+      filter = filter.not('id', 'in', '(${excludeUserIds.join(',')})');
+    }
+
+    final rows = await filter.order('full_name').limit(limit);
+    return rows.map(ProfileSummary.fromMap).toList();
   }
 
   Future<void> addMember({
@@ -172,5 +186,13 @@ class TeamRepository {
   static String? _cleanSeason(String? season) {
     final value = season?.trim();
     return (value == null || value.isEmpty) ? null : value;
+  }
+
+  /// Escapa los comodines de `LIKE` para que el texto se busque tal cual.
+  static String _escapeLike(String value) {
+    return value
+        .replaceAll(r'\', r'\\')
+        .replaceAll('%', r'\%')
+        .replaceAll('_', r'\_');
   }
 }
