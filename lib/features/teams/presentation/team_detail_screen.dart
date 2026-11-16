@@ -95,7 +95,11 @@ class TeamDetailScreen extends ConsumerWidget {
                     : null,
               ),
               const SizedBox(height: 8),
-              _MembersSection(teamId: teamId, isOwner: isOwner),
+              _MembersSection(
+                teamId: teamId,
+                isOwner: isOwner,
+                ownerId: team.ownerId,
+              ),
               const SizedBox(height: 24),
               _SectionHeader(
                 title: 'Torneos',
@@ -230,10 +234,15 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _MembersSection extends ConsumerWidget {
-  const _MembersSection({required this.teamId, required this.isOwner});
+  const _MembersSection({
+    required this.teamId,
+    required this.isOwner,
+    required this.ownerId,
+  });
 
   final String teamId;
   final bool isOwner;
+  final String ownerId;
 
   Future<void> _remove(
     BuildContext context,
@@ -292,7 +301,7 @@ class _MembersSection extends ConsumerWidget {
       data: (list) {
         if (list.isEmpty) {
           return Text(
-            'Todavía no hay integrantes. Añade jugadores por su correo.',
+            'Todavía no hay integrantes. Añade jugadores por su nombre.',
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           );
         }
@@ -313,7 +322,7 @@ class _MembersSection extends ConsumerWidget {
                     style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
                   subtitle: Text(list[i].email),
-                  trailing: isOwner
+                  trailing: isOwner && list[i].userId != ownerId
                       ? IconButton(
                           tooltip: 'Quitar del equipo',
                           icon: const Icon(Icons.person_remove_outlined),

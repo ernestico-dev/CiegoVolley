@@ -65,12 +65,33 @@ class TeamRepository {
     required String category,
     String? season,
   }) async {
-    await _client.from('teams').insert({
-      'owner_id': _userId,
-      'name': name.trim(),
-      'category': category,
-      'season': _cleanSeason(season),
-    });
+    final userId = _userId;
+
+    final team = await _client
+        .from('teams')
+        .insert({
+          'owner_id': userId,
+          'name': name.trim(),
+          'category': category,
+          'season': _cleanSeason(season),
+        })
+        .select('id')
+        .single();
+
+    // El creador forma parte del equipo desde el primer momento.
+    // El trigger `add_team_owner_as_member` hace lo mismo, así que se ignora
+    // el duplicado si ya lo insertó.
+    await _client
+        .from('team_members')
+        .upsert(
+          {
+            'team_id': team['id'] as String,
+            'user_id': userId,
+            'role': 'player',
+          },
+          ignoreDuplicates: true,
+          onConflict: 'team_id,user_id',
+        );
   }
 
   /// Solo el creador del equipo puede llamar a esto (lo garantiza RLS).
