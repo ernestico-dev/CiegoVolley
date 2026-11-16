@@ -2,48 +2,28 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/supabase/supabase_providers.dart';
-import '../../teams/domain/team.dart';
 import '../domain/match_draft.dart';
 
 final matchRepositoryProvider = Provider<MatchRepository>(
   (ref) => MatchRepository(ref.watch(supabaseClientProvider)),
 );
 
-/// Equipos inscritos en un torneo (los que pueden jugar en él).
-final tournamentTeamsProvider = FutureProvider.autoDispose
-    .family<List<Team>, String>((ref, tournamentId) {
-      return ref
-          .watch(matchRepositoryProvider)
-          .fetchTournamentTeams(tournamentId);
-    }, retry: noRetry);
-
 class MatchRepository {
   MatchRepository(this._client);
 
   final SupabaseClient _client;
 
-  Future<List<Team>> fetchTournamentTeams(String tournamentId) async {
-    final rows = await _client
-        .from('tournament_teams')
-        .select(
-          'team:teams!tournament_teams_team_id_fkey'
-          '(id, name, category, owner_id, season, created_at)',
-        )
-        .eq('tournament_id', tournamentId)
-        .neq('status', 'withdrawn')
-        .order('registered_at');
-
-    return rows
-        .map((row) => Team.fromMap(row['team'] as Map<String, dynamic>))
-        .toList();
-  }
-
   /// Guarda el partido con el marcador y las estadísticas por jugador.
+  ///
+  /// Si el torneo está en eliminatorias, enlaza el partido con su cruce del
+  /// cuadro para que el ganador avance de ronda.
   Future<void> saveMatch(MatchDraft draft) async {
     final user = _client.auth.currentUser;
     if (user == null) {
       throw const AuthException('No hay una sesión activa.');
     }
+
+    final stage = draft.tournament.stage;
 
     final match = await _client
         .from('matches')
@@ -54,6 +34,7 @@ class MatchRepository {
           'home_score': draft.homeScore,
           'away_score': draft.awayScore,
           'status': 'finished',
+          'stage': stage.dbValue,
           'created_by': user.id,
         })
         .select('id')
@@ -74,8 +55,32 @@ class MatchRepository {
           },
     ];
 
-    if (rows.isEmpty) return;
+    if (rows.isNotEmpty) {
+      await _client.from('match_player_stats').insert(rows);
+    }
 
-    await _client.from('match_player_stats').insert(rows);
+    if (!stage.isKnockout) return;
+
+    final home = draft.homeTeam.id;
+    final away = draft.awayTeam.id;
+
+    final slot = await _client
+        .from('tournament_slots')
+        .select('id')
+        .eq('tournament_id', draft.tournament.id)
+        .eq('stage', stage.dbValue)
+        .isFilter('match_id', null)
+        .or(
+          'and(home_team_id.eq.$home,away_team_id.eq.$away),'
+          'and(home_team_id.eq.$away,away_team_id.eq.$home)',
+        )
+        .maybeSingle();
+
+    if (slot == null) return;
+
+    await _client
+        .from('tournament_slots')
+        .update({'match_id': matchId})
+        .eq('id', slot['id'] as String);
   }
 }

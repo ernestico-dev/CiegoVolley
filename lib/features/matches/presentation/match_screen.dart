@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../teams/domain/team_member.dart';
+import '../../tournaments/data/tournament_repository.dart';
 import '../data/match_repository.dart';
 import '../domain/match_draft.dart';
 import 'match_draft_controller.dart';
@@ -269,6 +270,14 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
     try {
       await ref.read(matchRepositoryProvider).saveMatch(draft);
       ref.read(matchDraftProvider.notifier).clear();
+
+      final tournamentId = draft.tournament.id;
+      ref.invalidate(tournamentMatchesProvider(tournamentId));
+      ref.invalidate(standingsProvider(tournamentId));
+      ref.invalidate(bracketProvider(tournamentId));
+      ref.invalidate(tournamentProvider(tournamentId));
+      ref.invalidate(tournamentsProvider);
+
       if (!mounted) return;
       context.pop();
       messenger.showSnackBar(

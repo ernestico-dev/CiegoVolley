@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/router/app_routes.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../profile/data/profile_repository.dart';
@@ -71,6 +73,8 @@ class TournamentsScreen extends ConsumerWidget {
                 final tournament = list[index];
                 return _TournamentCard(
                   tournament: tournament,
+                  onTap: () =>
+                      context.push(AppRoutes.tournamentDetail(tournament.id)),
                   onEdit: isAdmin
                       ? () => TournamentFormSheet.showEdit(context, tournament)
                       : null,
@@ -85,9 +89,14 @@ class TournamentsScreen extends ConsumerWidget {
 }
 
 class _TournamentCard extends StatelessWidget {
-  const _TournamentCard({required this.tournament, this.onEdit});
+  const _TournamentCard({
+    required this.tournament,
+    required this.onTap,
+    this.onEdit,
+  });
 
   final Tournament tournament;
+  final VoidCallback onTap;
   final VoidCallback? onEdit;
 
   @override
@@ -104,7 +113,7 @@ class _TournamentCard extends StatelessWidget {
 
     return Card(
       child: InkWell(
-        onTap: onEdit,
+        onTap: onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),

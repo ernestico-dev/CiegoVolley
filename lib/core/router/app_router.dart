@@ -11,6 +11,7 @@ import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
 import '../../features/teams/presentation/team_detail_screen.dart';
 import '../../features/teams/presentation/teams_screen.dart';
+import '../../features/tournaments/presentation/tournament_detail_screen.dart';
 import '../../features/tournaments/presentation/tournaments_screen.dart';
 import '../supabase/supabase_providers.dart';
 import 'app_routes.dart';
@@ -71,6 +72,14 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.tournaments,
                 builder: (context, state) => const TournamentsScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':id',
+                    builder: (context, state) => TournamentDetailScreen(
+                      tournamentId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -13,6 +13,9 @@ abstract final class AppRoutes {
   /// Detalle de un equipo dentro de la pestaña Equipos.
   static String teamDetail(String id) => '$teams/$id';
 
+  /// Detalle de un torneo dentro de la pestaña Torneos.
+  static String tournamentDetail(String id) => '$tournaments/$id';
+
   /// Partido en curso dentro de la pestaña Modo partido.
   static const String liveMatch = '$matches/en-vivo';
 }

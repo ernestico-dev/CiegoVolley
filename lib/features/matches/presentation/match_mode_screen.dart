@@ -5,10 +5,10 @@ import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../profile/data/profile_repository.dart';
 import '../../teams/data/team_repository.dart';
 import '../../tournaments/data/tournament_repository.dart';
 import '../../tournaments/domain/tournament.dart';
-import '../data/match_repository.dart';
 import '../domain/match_draft.dart';
 import 'match_draft_controller.dart';
 
@@ -28,6 +28,21 @@ class _MatchModeScreenState extends ConsumerState<MatchModeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAdmin = ref.watch(isAdminProvider);
+
+    if (!isAdmin) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Modo partido')),
+        body: const EmptyState(
+          icon: Icons.lock_outline,
+          title: 'Solo el administrador',
+          message:
+              'El modo partido está reservado al administrador del club. '
+              'Si necesitas dirigir un partido, pídeselo a Ernesto Carbonell.',
+        ),
+      );
+    }
+
     final tournaments = ref.watch(tournamentsProvider);
     final draft = ref.watch(matchDraftProvider);
 
