@@ -6,10 +6,13 @@ import 'package:intl/intl.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/theme/theme_controller.dart';
+import '../../../core/utils/error_messages.dart';
+import '../../stats/presentation/widgets/global_stats_section.dart';
 import '../../teams/data/team_repository.dart';
 import '../../tournaments/data/tournament_repository.dart';
+import '../../tournaments/domain/tournament.dart';
 
-/// Pantalla principal con resumen y accesos rápidos.
+/// Pantalla principal con resumen, torneos en curso y estadísticas.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -88,39 +91,9 @@ class HomeScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 24),
-          Text(
-            'Accesos rápidos',
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(
-              children: [
-                _ActionTile(
-                  icon: Icons.groups_outlined,
-                  title: 'Gestionar equipos',
-                  subtitle: 'Plantillas, categorías y temporadas',
-                  onTap: () => context.go(AppRoutes.teams),
-                ),
-                const Divider(),
-                _ActionTile(
-                  icon: Icons.emoji_events_outlined,
-                  title: 'Ver torneos',
-                  subtitle: 'Calendario y resultados',
-                  onTap: () => context.go(AppRoutes.tournaments),
-                ),
-                const Divider(),
-                _ActionTile(
-                  icon: Icons.person_outline,
-                  title: 'Mi perfil',
-                  subtitle: 'Cuenta, tema y sesión',
-                  onTap: () => context.go(AppRoutes.profile),
-                ),
-              ],
-            ),
-          ),
+          _CurrentTournaments(tournaments: tournaments),
+          const SizedBox(height: 24),
+          const GlobalStatsSection(),
         ],
       ),
     );
@@ -129,6 +102,170 @@ class HomeScreen extends ConsumerWidget {
   static String _capitalize(String value) {
     if (value.isEmpty) return value;
     return value[0].toUpperCase() + value.substring(1);
+  }
+}
+
+/// Acceso rápido a los torneos que todavía no han finalizado.
+class _CurrentTournaments extends StatelessWidget {
+  const _CurrentTournaments({required this.tournaments});
+
+  final AsyncValue<List<Tournament>> tournaments;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final active = tournaments.asData?.value
+        .where((tournament) => !tournament.isFinished)
+        .toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Torneos en curso',
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Solo los torneos que todavía no han finalizado.',
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+        const SizedBox(height: 10),
+        if (tournaments.hasError)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.cloud_off_outlined,
+                    color: theme.colorScheme.error,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      friendlyErrorMessage(tournaments.error!),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (active == null)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+          )
+        else if (active.isEmpty)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.event_available_outlined,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'No hay torneos en curso ahora mismo.',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          ...active.map(
+            (tournament) => Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _TournamentTile(tournament: tournament),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _TournamentTile extends StatelessWidget {
+  const _TournamentTile({required this.tournament});
+
+  final Tournament tournament;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateFormat = DateFormat('d MMM', 'es');
+
+    final dates = switch ((tournament.startsOn, tournament.endsOn)) {
+      (final start?, final end?) =>
+        '${dateFormat.format(start)} – ${dateFormat.format(end)}',
+      (final start?, null) => dateFormat.format(start),
+      _ => 'Fechas por confirmar',
+    };
+
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => context.push(AppRoutes.tournamentDetail(tournament.id)),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                foregroundColor: theme.colorScheme.onPrimaryContainer,
+                child: const Icon(Icons.emoji_events_outlined, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      tournament.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      [
+                        if (tournament.venue != null) tournament.venue!,
+                        dates,
+                        tournament.stage.label,
+                      ].join(' · '),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -171,31 +308,6 @@ class _StatCard extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-      subtitle: Text(subtitle),
-      trailing: const Icon(Icons.chevron_right),
-      onTap: onTap,
     );
   }
 }
