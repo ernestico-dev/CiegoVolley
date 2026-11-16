@@ -11,7 +11,7 @@ final tournamentRepositoryProvider = Provider<TournamentRepository>(
 /// Torneos publicados en la plataforma.
 final tournamentsProvider = FutureProvider.autoDispose<List<Tournament>>((ref) {
   return ref.watch(tournamentRepositoryProvider).fetchTournaments();
-});
+}, retry: noRetry);
 
 class TournamentRepository {
   TournamentRepository(this._client);

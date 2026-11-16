@@ -14,24 +14,24 @@ final teamRepositoryProvider = Provider<TeamRepository>(
 /// Equipos visibles para el usuario. Se refresca con `ref.invalidate`.
 final teamsProvider = FutureProvider.autoDispose<List<Team>>((ref) {
   return ref.watch(teamRepositoryProvider).fetchTeams();
-});
+}, retry: noRetry);
 
 /// Detalle de un equipo.
 final teamProvider = FutureProvider.autoDispose.family<Team, String>((ref, id) {
   return ref.watch(teamRepositoryProvider).fetchTeam(id);
-});
+}, retry: noRetry);
 
 /// Integrantes de un equipo.
 final teamMembersProvider = FutureProvider.autoDispose
     .family<List<TeamMember>, String>((ref, teamId) {
       return ref.watch(teamRepositoryProvider).fetchMembers(teamId);
-    });
+    }, retry: noRetry);
 
 /// Torneos en los que está inscrito un equipo.
 final teamTournamentsProvider = FutureProvider.autoDispose
     .family<List<TeamTournament>, String>((ref, teamId) {
       return ref.watch(teamRepositoryProvider).fetchTeamTournaments(teamId);
-    });
+    }, retry: noRetry);
 
 class TeamRepository {
   TeamRepository(this._client);

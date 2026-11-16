@@ -34,3 +34,11 @@ class SessionNotifier extends Notifier<Session?> {
 final currentUserProvider = Provider<User?>((ref) {
   return ref.watch(sessionProvider)?.user;
 });
+
+/// Política de reintentos desactivada.
+///
+/// Riverpod 3 reintenta por defecto con backoff exponencial. Eso hace que un
+/// fallo permanente (tabla inexistente, RLS, migración sin ejecutar) se repita
+/// muchas veces, llene la consola de 404 y deje la pantalla cargando. Aquí el
+/// usuario refresca a mano cuando quiera.
+Duration? noRetry(int retryCount, Object error) => null;
