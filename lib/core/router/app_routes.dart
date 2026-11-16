@@ -7,8 +7,12 @@ abstract final class AppRoutes {
   static const String home = '/inicio';
   static const String teams = '/equipos';
   static const String tournaments = '/torneos';
+  static const String matches = '/partido';
   static const String profile = '/perfil';
 
   /// Detalle de un equipo dentro de la pestaña Equipos.
   static String teamDetail(String id) => '$teams/$id';
+
+  /// Partido en curso dentro de la pestaña Modo partido.
+  static const String liveMatch = '$matches/en-vivo';
 }

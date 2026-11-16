@@ -34,6 +34,11 @@ class AppShell extends StatelessWidget {
             label: 'Torneos',
           ),
           NavigationDestination(
+            icon: Icon(Icons.sports_volleyball_outlined),
+            selectedIcon: Icon(Icons.sports_volleyball),
+            label: 'Partido',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Perfil',

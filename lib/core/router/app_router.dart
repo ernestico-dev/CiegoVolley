@@ -5,6 +5,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../features/auth/presentation/login_screen.dart';
 import '../../features/home/presentation/home_screen.dart';
+import '../../features/matches/presentation/match_mode_screen.dart';
+import '../../features/matches/presentation/match_screen.dart';
 import '../../features/profile/presentation/profile_screen.dart';
 import '../../features/shell/presentation/app_shell.dart';
 import '../../features/teams/presentation/team_detail_screen.dart';
@@ -69,6 +71,20 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.tournaments,
                 builder: (context, state) => const TournamentsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.matches,
+                builder: (context, state) => const MatchModeScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'en-vivo',
+                    builder: (context, state) => const MatchScreen(),
+                  ),
+                ],
               ),
             ],
           ),
