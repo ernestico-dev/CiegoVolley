@@ -1,10 +1,13 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/models/profile_summary.dart';
 import '../../../core/supabase/supabase_providers.dart';
+import '../../../core/utils/app_exception.dart';
+
+/// Tamaño máximo aceptado para una foto de perfil.
+const int _maxAvatarBytes = 5 * 1024 * 1024;
 
 final profileRepositoryProvider = Provider<ProfileRepository>(
   (ref) => ProfileRepository(ref.watch(supabaseClientProvider)),
@@ -69,6 +72,17 @@ class ProfileRepository {
     required String extension,
     String? previousUrl,
   }) async {
+    if (bytes.isEmpty) {
+      throw const AppException(
+        'No pudimos leer la imagen. Elige otra foto de la galería.',
+      );
+    }
+    if (bytes.lengthInBytes > _maxAvatarBytes) {
+      throw const AppException(
+        'La imagen pesa más de 5 MB. Elige una foto más pequeña.',
+      );
+    }
+
     final cleanExtension = extension.toLowerCase().replaceAll('.', '');
     final safeExtension =
         const {'jpg', 'jpeg', 'png', 'webp', 'gif'}.contains(cleanExtension)
@@ -85,13 +99,24 @@ class ProfileRepository {
         ? 'image/gif'
         : 'image/jpeg';
 
-    await _client.storage
-        .from('avatars')
-        .uploadBinary(
-          path,
-          bytes,
-          fileOptions: FileOptions(contentType: contentType, upsert: true),
-        );
+    try {
+      await _client.storage
+          .from('avatars')
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: FileOptions(contentType: contentType, upsert: true),
+          );
+    } on StorageException catch (error, stackTrace) {
+      // El mensaje real del servidor es la única pista útil para saber si
+      // falta el bucket, las políticas o la sesión.
+      debugPrint(
+        'Avatar: falló la subida de $path '
+        '(${bytes.lengthInBytes} bytes, $contentType): $error',
+      );
+      debugPrint('$stackTrace');
+      rethrow;
+    }
 
     final publicUrl = _client.storage.from('avatars').getPublicUrl(path);
 

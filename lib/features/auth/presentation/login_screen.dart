@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/utils/error_messages.dart';
 import '../../../core/utils/validators.dart';
 import 'auth_controller.dart';
@@ -97,6 +98,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isLoading = ref.watch(authControllerProvider).isLoading;
+    final sessionEnded = ref.watch(sessionEndedProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -111,6 +113,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const _LoginHeader(),
+                    if (sessionEnded) ...[
+                      const SizedBox(height: 20),
+                      _SessionEndedNotice(
+                        onDismiss: () =>
+                            ref.read(sessionEndedProvider.notifier).clear(),
+                      ),
+                    ],
                     const SizedBox(height: 28),
                     SegmentedButton<bool>(
                       segments: const [
@@ -263,6 +272,57 @@ class _LoginHeader extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// Aviso de que la sesión anterior se cerró sola (token caducado, etc.).
+class _SessionEndedNotice extends StatelessWidget {
+  const _SessionEndedNotice({required this.onDismiss});
+
+  final VoidCallback onDismiss;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 12, 4, 12),
+      decoration: BoxDecoration(
+        color: scheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.lock_clock_outlined,
+            size: 20,
+            color: scheme.onSecondaryContainer,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Tu sesión se cerró porque caducó. Vuelve a entrar para '
+              'continuar.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: scheme.onSecondaryContainer,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: 'Ocultar aviso',
+            visualDensity: VisualDensity.compact,
+            onPressed: onDismiss,
+            icon: Icon(
+              Icons.close,
+              size: 18,
+              color: scheme.onSecondaryContainer,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

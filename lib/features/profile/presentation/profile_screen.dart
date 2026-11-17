@@ -280,7 +280,7 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
           .uploadAvatar(
             userId: user.id,
             bytes: bytes,
-            extension: _extensionOf(file.name),
+            extension: _extensionOf(file.name, file.mimeType),
             previousUrl: profile?.avatarUrl,
           );
 
@@ -289,7 +289,10 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
       messenger.showSnackBar(
         const SnackBar(content: Text('Foto de perfil actualizada.')),
       );
-    } catch (error) {
+    } catch (error, stackTrace) {
+      // Sin este detalle en consola es imposible saber qué falla de verdad.
+      debugPrint('Avatar: la subida falló con ${error.runtimeType}: $error');
+      debugPrint('$stackTrace');
       messenger.showSnackBar(
         SnackBar(content: Text(friendlyErrorMessage(error))),
       );
@@ -298,10 +301,19 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
     }
   }
 
-  static String _extensionOf(String name) {
+  /// Extensión del archivo, con el tipo MIME como respaldo.
+  static String _extensionOf(String name, String? mimeType) {
     final dot = name.lastIndexOf('.');
-    if (dot < 0 || dot == name.length - 1) return 'jpg';
-    return name.substring(dot + 1);
+    if (dot >= 0 && dot < name.length - 1) {
+      return name.substring(dot + 1).toLowerCase();
+    }
+
+    return switch (mimeType?.toLowerCase()) {
+      'image/png' => 'png',
+      'image/webp' => 'webp',
+      'image/gif' => 'gif',
+      _ => 'jpg',
+    };
   }
 }
 

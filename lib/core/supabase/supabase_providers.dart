@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -21,12 +22,71 @@ class SessionNotifier extends Notifier<Session?> {
   Session? build() {
     final auth = ref.watch(supabaseClientProvider).auth;
 
-    final subscription = auth.onAuthStateChange.listen((state) {
-      this.state = state.session;
-    });
+    final subscription = auth.onAuthStateChange.listen(
+      (state) {
+        debugPrint(
+          '[auth] ${state.event.name} · sesión=${state.session != null} · '
+          'motivo=${state.signOutReason?.name} · '
+          'otraPestaña=${state.fromBroadcast}',
+        );
+
+        if (state.event == AuthChangeEvent.signedIn) {
+          ref.read(sessionEndedProvider.notifier).clear();
+        }
+
+        final next = state.session;
+        if (next != null) {
+          this.state = next;
+          return;
+        }
+
+        // Un `null` que no sea un cierre de sesión explícito no debe sacar
+        // al usuario de la app: a veces el SDK avisa sin sesión (por ejemplo
+        // al refrescar el token) y antes eso devolvía al login.
+        final current = auth.currentSession;
+        if (current != null) {
+          this.state = current;
+          return;
+        }
+
+        if (state.event == AuthChangeEvent.signedOut) {
+          final reason = state.signOutReason;
+          debugPrint(
+            '[auth] sesión cerrada: ${reason?.name ?? 'sin motivo indicado'}',
+          );
+
+          if (reason != SignOutReason.userInitiated) {
+            ref.read(sessionEndedProvider.notifier).mark();
+          }
+
+          this.state = null;
+        }
+      },
+      onError: (Object error, StackTrace stackTrace) {
+        debugPrint('[auth] error en el estado de sesión: $error');
+      },
+    );
     ref.onDispose(subscription.cancel);
 
     return auth.currentSession;
+  }
+}
+
+/// `true` cuando la sesión se cerró sin que el usuario lo pidiera.
+///
+/// El login lo usa para explicar por qué ha vuelto a la pantalla de entrada.
+final sessionEndedProvider = NotifierProvider<SessionEndedNotifier, bool>(
+  SessionEndedNotifier.new,
+);
+
+class SessionEndedNotifier extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  void mark() => state = true;
+
+  void clear() {
+    if (state) state = false;
   }
 }
 
