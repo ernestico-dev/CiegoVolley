@@ -7,6 +7,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../../core/utils/error_messages.dart';
+import '../../../core/widgets/editable_image.dart';
 import '../../stats/data/stats_repository.dart';
 import '../../stats/presentation/widgets/global_stats_section.dart';
 import '../../teams/data/team_repository.dart';
@@ -141,13 +142,13 @@ class _CurrentTournaments extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          'Solo los torneos que todavía no han finalizado.',
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
+        //  const SizedBox(height: 2),
+        //  Text(
+        //    'Solo los torneos que todavía no han finalizado.',
+        //    style: theme.textTheme.labelSmall?.copyWith(
+        //      color: theme.colorScheme.onSurfaceVariant,
+        //    ),
+        //  ),
         const SizedBox(height: 10),
         if (tournaments.hasError)
           Card(
@@ -239,11 +240,16 @@ class _TournamentTile extends StatelessWidget {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 20,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                foregroundColor: theme.colorScheme.onPrimaryContainer,
-                child: const Icon(Icons.emoji_events_outlined, size: 20),
+              EditableImage(
+                imageUrl: tournament.imageUrl,
+                previewTitle: tournament.name,
+                size: 40,
+                borderRadius: BorderRadius.circular(10),
+                fallback: Icon(
+                  Icons.emoji_events_outlined,
+                  size: 20,
+                  color: theme.colorScheme.onPrimaryContainer,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

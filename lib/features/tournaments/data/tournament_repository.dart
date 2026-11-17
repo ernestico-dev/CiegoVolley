@@ -1,8 +1,10 @@
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../../core/storage/public_images.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../teams/domain/team.dart';
 import '../domain/match_result.dart';
@@ -113,7 +115,7 @@ class TournamentRepository {
         .from('tournament_teams')
         .select(
           'team:teams!tournament_teams_team_id_fkey'
-          '(id, name, category, owner_id, season, created_at)',
+          '(id, name, category, owner_id, season, logo_url, created_at)',
         )
         .eq('tournament_id', tournamentId)
         .neq('status', 'withdrawn')
@@ -271,6 +273,38 @@ class TournamentRepository {
           ),
         })
         .eq('id', id);
+  }
+
+  /// Sube la imagen del torneo y la guarda en `tournaments.image_url`.
+  ///
+  /// Solo el administrador puede hacerlo (lo imponen RLS y el bucket `media`).
+  Future<String> updateTournamentImage({
+    required String tournamentId,
+    required Uint8List bytes,
+    required String extension,
+    String? previousUrl,
+  }) async {
+    final publicUrl = await uploadPublicImage(
+      client: _client,
+      bucket: 'media',
+      folder: 'tournaments/$tournamentId',
+      baseName: 'imagen',
+      bytes: bytes,
+      extension: extension,
+    );
+
+    await _client
+        .from('tournaments')
+        .update({'image_url': publicUrl})
+        .eq('id', tournamentId);
+
+    await removePublicImage(
+      client: _client,
+      bucket: 'media',
+      publicUrl: previousUrl,
+    );
+
+    return publicUrl;
   }
 
   /// Solo el administrador puede eliminar torneos (lo impone RLS).

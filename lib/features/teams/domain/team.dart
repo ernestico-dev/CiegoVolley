@@ -6,6 +6,7 @@ class Team {
     required this.category,
     required this.ownerId,
     this.season,
+    this.logoUrl,
     this.createdAt,
   });
 
@@ -14,6 +15,7 @@ class Team {
   final String category;
   final String ownerId;
   final String? season;
+  final String? logoUrl;
   final DateTime? createdAt;
 
   factory Team.fromMap(Map<String, dynamic> map) {
@@ -23,6 +25,7 @@ class Team {
       category: map['category'] as String? ?? 'Senior',
       ownerId: map['owner_id'] as String? ?? '',
       season: map['season'] as String?,
+      logoUrl: map['logo_url'] as String?,
       createdAt: DateTime.tryParse(map['created_at'] as String? ?? ''),
     );
   }

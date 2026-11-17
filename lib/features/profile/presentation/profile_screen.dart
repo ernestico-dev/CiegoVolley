@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
 
 import '../../../core/notifications/notification_bridge.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/storage/image_picker_helper.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/theme/theme_controller.dart';
 import '../../../core/utils/error_messages.dart';
@@ -259,28 +259,21 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
     if (user == null) return;
 
     final messenger = ScaffoldMessenger.of(context);
-    final picker = ImagePicker();
 
     try {
-      final file = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
-      if (file == null || !mounted) return;
+      final picked = await pickImageFromGallery(maxSide: 1024);
+      if (picked == null || !mounted) return;
 
       setState(() => _uploading = true);
 
-      final bytes = await file.readAsBytes();
       final profile = ref.read(myProfileProvider).asData?.value;
 
       await ref
           .read(profileRepositoryProvider)
           .uploadAvatar(
             userId: user.id,
-            bytes: bytes,
-            extension: _extensionOf(file.name, file.mimeType),
+            bytes: picked.bytes,
+            extension: picked.extension,
             previousUrl: profile?.avatarUrl,
           );
 
@@ -299,21 +292,6 @@ class _ProfileHeaderState extends ConsumerState<_ProfileHeader> {
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
-  }
-
-  /// Extensión del archivo, con el tipo MIME como respaldo.
-  static String _extensionOf(String name, String? mimeType) {
-    final dot = name.lastIndexOf('.');
-    if (dot >= 0 && dot < name.length - 1) {
-      return name.substring(dot + 1).toLowerCase();
-    }
-
-    return switch (mimeType?.toLowerCase()) {
-      'image/png' => 'png',
-      'image/webp' => 'webp',
-      'image/gif' => 'gif',
-      _ => 'jpg',
-    };
   }
 }
 

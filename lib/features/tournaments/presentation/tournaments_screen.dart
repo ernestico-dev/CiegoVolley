@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/error_messages.dart';
+import '../../../core/widgets/editable_image.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../profile/data/profile_repository.dart';
 import '../data/tournament_repository.dart';
@@ -120,11 +121,16 @@ class _TournamentCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 24,
+              EditableImage(
+                imageUrl: tournament.imageUrl,
+                previewTitle: tournament.name,
+                size: 52,
+                borderRadius: BorderRadius.circular(12),
                 backgroundColor: theme.colorScheme.tertiaryContainer,
-                foregroundColor: theme.colorScheme.onTertiaryContainer,
-                child: const Icon(Icons.emoji_events_outlined),
+                fallback: Icon(
+                  Icons.emoji_events_outlined,
+                  color: theme.colorScheme.onTertiaryContainer,
+                ),
               ),
               const SizedBox(width: 14),
               Expanded(

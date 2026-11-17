@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/error_messages.dart';
+import '../../../core/widgets/editable_image.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../data/team_repository.dart';
 import '../domain/team.dart';
@@ -83,12 +84,17 @@ class _TeamCard extends StatelessWidget {
     return Card(
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          foregroundColor: theme.colorScheme.onPrimaryContainer,
-          child: Text(
+        leading: EditableImage(
+          imageUrl: team.logoUrl,
+          previewTitle: team.name,
+          size: 44,
+          borderRadius: BorderRadius.circular(22),
+          fallback: Text(
             initial,
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onPrimaryContainer,
+            ),
           ),
         ),
         title: Text(

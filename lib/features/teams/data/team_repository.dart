@@ -1,7 +1,10 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/models/profile_summary.dart';
+import '../../../core/storage/public_images.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../tournaments/domain/team_tournament.dart';
 import '../domain/team.dart';
@@ -109,6 +112,38 @@ class TeamRepository {
           'season': _cleanSeason(season),
         })
         .eq('id', id);
+  }
+
+  /// Sube el escudo del equipo y lo guarda en `teams.logo_url`.
+  ///
+  /// Solo el creador puede hacerlo (lo imponen RLS y el bucket `media`).
+  Future<String> updateTeamLogo({
+    required String teamId,
+    required Uint8List bytes,
+    required String extension,
+    String? previousUrl,
+  }) async {
+    final publicUrl = await uploadPublicImage(
+      client: _client,
+      bucket: 'media',
+      folder: 'teams/$teamId',
+      baseName: 'logo',
+      bytes: bytes,
+      extension: extension,
+    );
+
+    await _client
+        .from('teams')
+        .update({'logo_url': publicUrl})
+        .eq('id', teamId);
+
+    await removePublicImage(
+      client: _client,
+      bucket: 'media',
+      publicUrl: previousUrl,
+    );
+
+    return publicUrl;
   }
 
   /// Solo el creador puede eliminar el equipo (lo impone RLS).

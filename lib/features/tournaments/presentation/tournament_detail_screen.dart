@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/storage/image_picker_helper.dart';
 import '../../../core/utils/error_messages.dart';
+import '../../../core/widgets/editable_image.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../profile/data/profile_repository.dart';
 import '../../teams/domain/team.dart';
@@ -62,7 +64,7 @@ class TournamentDetailScreen extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
             children: [
-              _Header(tournament: tournament),
+              _Header(tournament: tournament, isAdmin: isAdmin),
               const SizedBox(height: 20),
               _StandingsSection(tournamentId: tournamentId),
               const SizedBox(height: 20),
@@ -75,13 +77,59 @@ class TournamentDetailScreen extends ConsumerWidget {
   }
 }
 
-class _Header extends StatelessWidget {
-  const _Header({required this.tournament});
+class _Header extends ConsumerStatefulWidget {
+  const _Header({required this.tournament, required this.isAdmin});
 
   final Tournament tournament;
+  final bool isAdmin;
+
+  @override
+  ConsumerState<_Header> createState() => _HeaderState();
+}
+
+class _HeaderState extends ConsumerState<_Header> {
+  bool _uploading = false;
+
+  Future<void> _pickImage() async {
+    final tournament = widget.tournament;
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final picked = await pickImageFromGallery(maxSide: 1600);
+      if (picked == null || !mounted) return;
+
+      setState(() => _uploading = true);
+
+      await ref
+          .read(tournamentRepositoryProvider)
+          .updateTournamentImage(
+            tournamentId: tournament.id,
+            bytes: picked.bytes,
+            extension: picked.extension,
+            previousUrl: tournament.imageUrl,
+          );
+
+      ref.invalidate(tournamentProvider(tournament.id));
+      ref.invalidate(tournamentsProvider);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Foto del torneo actualizada.')),
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Imagen de torneo: falló la subida con ${error.runtimeType}: $error',
+      );
+      debugPrint('$stackTrace');
+      messenger.showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(error))),
+      );
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final tournament = widget.tournament;
     final theme = Theme.of(context);
     final dateFormat = DateFormat('d MMM y', 'es');
 
@@ -92,33 +140,51 @@ class _Header extends StatelessWidget {
       _ => 'Fechas por confirmar',
     };
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              [
-                if (tournament.venue != null) tournament.venue!,
-                dates,
-              ].join(' · '),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        EditableImage(
+          imageUrl: tournament.imageUrl,
+          previewTitle: tournament.name,
+          aspectRatio: 16 / 9,
+          onEdit: widget.isAdmin ? _pickImage : null,
+          uploading: _uploading,
+          fallback: Icon(
+            Icons.emoji_events_outlined,
+            size: 56,
+            color: theme.colorScheme.onPrimaryContainer,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _Chip(label: _statusLabel(tournament.status)),
-                _Chip(label: tournament.stage.label, highlighted: true),
+                Text(
+                  [
+                    if (tournament.venue != null) tournament.venue!,
+                    dates,
+                  ].join(' · '),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    _Chip(label: _statusLabel(tournament.status)),
+                    _Chip(label: tournament.stage.label, highlighted: true),
+                  ],
+                ),
               ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

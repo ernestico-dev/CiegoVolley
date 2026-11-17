@@ -44,6 +44,7 @@ class Tournament {
     required this.status,
     this.stage = TournamentStage.league,
     this.venue,
+    this.imageUrl,
     this.startsOn,
     this.endsOn,
   });
@@ -53,6 +54,7 @@ class Tournament {
   final String status;
   final TournamentStage stage;
   final String? venue;
+  final String? imageUrl;
   final DateTime? startsOn;
   final DateTime? endsOn;
 
@@ -65,6 +67,7 @@ class Tournament {
       status: map['status'] as String? ?? 'draft',
       stage: TournamentStage.fromDb(map['stage'] as String?),
       venue: map['venue'] as String?,
+      imageUrl: map['image_url'] as String?,
       startsOn: DateTime.tryParse(map['starts_on'] as String? ?? ''),
       endsOn: DateTime.tryParse(map['ends_on'] as String? ?? ''),
     );

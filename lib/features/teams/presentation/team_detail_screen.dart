@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '../../../core/storage/image_picker_helper.dart';
 import '../../../core/supabase/supabase_providers.dart';
 import '../../../core/utils/error_messages.dart';
+import '../../../core/widgets/editable_image.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/user_avatar.dart';
 import '../../tournaments/domain/team_tournament.dart';
@@ -126,14 +128,60 @@ class TeamDetailScreen extends ConsumerWidget {
   }
 }
 
-class _TeamSummary extends StatelessWidget {
+class _TeamSummary extends ConsumerStatefulWidget {
   const _TeamSummary({required this.team, required this.isOwner});
 
   final Team team;
   final bool isOwner;
 
   @override
+  ConsumerState<_TeamSummary> createState() => _TeamSummaryState();
+}
+
+class _TeamSummaryState extends ConsumerState<_TeamSummary> {
+  bool _uploading = false;
+
+  Future<void> _pickLogo() async {
+    final team = widget.team;
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      final picked = await pickImageFromGallery();
+      if (picked == null || !mounted) return;
+
+      setState(() => _uploading = true);
+
+      await ref
+          .read(teamRepositoryProvider)
+          .updateTeamLogo(
+            teamId: team.id,
+            bytes: picked.bytes,
+            extension: picked.extension,
+            previousUrl: team.logoUrl,
+          );
+
+      ref.invalidate(teamProvider(team.id));
+      ref.invalidate(teamsProvider);
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Foto del equipo actualizada.')),
+      );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Logo de equipo: falló la subida con ${error.runtimeType}: $error',
+      );
+      debugPrint('$stackTrace');
+      messenger.showSnackBar(
+        SnackBar(content: Text(friendlyErrorMessage(error))),
+      );
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final team = widget.team;
+    final isOwner = widget.isOwner;
     final theme = Theme.of(context);
     final initial = team.name.characters.first.toUpperCase();
 
@@ -145,15 +193,19 @@ class _TeamSummary extends StatelessWidget {
           children: [
             Row(
               children: [
-                CircleAvatar(
-                  radius: 28,
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  foregroundColor: theme.colorScheme.onPrimaryContainer,
-                  child: Text(
+                EditableImage(
+                  imageUrl: team.logoUrl,
+                  previewTitle: team.name,
+                  size: 64,
+                  borderRadius: BorderRadius.circular(32),
+                  onEdit: isOwner ? _pickLogo : null,
+                  uploading: _uploading,
+                  fallback: Text(
                     initial,
-                    style: const TextStyle(
-                      fontSize: 22,
+                    style: TextStyle(
+                      fontSize: 24,
                       fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onPrimaryContainer,
                     ),
                   ),
                 ),
