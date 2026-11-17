@@ -215,7 +215,7 @@ class _LiveMatchCard extends ConsumerWidget {
             const SizedBox(height: 4),
             Text(
               '${draft.homeTeam.name} vs ${draft.awayTeam.name} · '
-              'set ${draft.currentSet} de ${draft.setsCount}',
+              '${draft.allSetsPlayed ? 'partido terminado' : 'set ${draft.currentSet} de ${draft.setsCount}'}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
@@ -546,8 +546,11 @@ class _SetsSelector extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          'Se juega set a set: al cerrar cada uno se guarda su marcador y '
-          'gana el partido quien consiga más sets.',
+          [
+            'Al mejor de $value sets: gana el primero que consiga '
+                '${value ~/ 2 + 1} set${value ~/ 2 + 1 == 1 ? '' : 's'}.',
+            if (value.isEven) 'Si acaban empatados, el partido es empate.',
+          ].join(' '),
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

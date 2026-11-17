@@ -156,16 +156,73 @@ void main() {
     expect(container.read(matchDraftProvider)!.completedSets, isEmpty);
   });
 
-  test('al cerrar todos los sets el partido queda completo', () {
-    for (var i = 0; i < 3; i++) {
-      controller.addPoint(home: true);
-      expect(controller.closeSet(), isTrue);
-    }
+  test('al mejor de 3 gana el primero que consigue 2 sets', () {
+    expect(container.read(matchDraftProvider)!.setsToWin, 2);
+
+    controller.addPoint(home: true);
+    expect(controller.closeSet(), isTrue);
+    expect(container.read(matchDraftProvider)!.allSetsPlayed, isFalse);
+
+    controller.addPoint(home: true);
+    expect(controller.closeSet(), isTrue);
 
     final draft = container.read(matchDraftProvider)!;
     expect(draft.allSetsPlayed, isTrue);
-    expect(draft.homeSetsWon, 3);
+    expect(draft.setsScore, '2-0');
+    expect(
+      draft.completedSets.length,
+      2,
+      reason: 'el tercer set ya no se juega',
+    );
     expect(controller.closeSet(), isFalse);
+  });
+
+  test('al mejor de 5 gana el primero que consigue 3 sets', () {
+    controller.start(
+      tournament: tournament,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      homePlayers: const [homePlayer],
+      awayPlayers: const [awayPlayer],
+      setsCount: 5,
+    );
+
+    expect(container.read(matchDraftProvider)!.setsToWin, 3);
+
+    for (var i = 0; i < 2; i++) {
+      controller.addPoint(home: false);
+      expect(controller.closeSet(), isTrue);
+      expect(container.read(matchDraftProvider)!.allSetsPlayed, isFalse);
+    }
+
+    controller.addPoint(home: false);
+    expect(controller.closeSet(), isTrue);
+
+    final draft = container.read(matchDraftProvider)!;
+    expect(draft.allSetsPlayed, isTrue);
+    expect(draft.setsScore, '0-3');
+    expect(draft.completedSets.length, 3);
+  });
+
+  test('con 2 sets un 1-1 es empate', () {
+    controller.start(
+      tournament: tournament,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      homePlayers: const [homePlayer],
+      awayPlayers: const [awayPlayer],
+      setsCount: 2,
+    );
+
+    controller.addPoint(home: true);
+    expect(controller.closeSet(), isTrue);
+    controller.addPoint(home: false);
+    expect(controller.closeSet(), isTrue);
+
+    final draft = container.read(matchDraftProvider)!;
+    expect(draft.allSetsPlayed, isTrue);
+    expect(draft.isDraw, isTrue);
+    expect(draft.setsScore, '1-1');
   });
 
   test('deshacer el último set devuelve sus puntos al marcador', () {

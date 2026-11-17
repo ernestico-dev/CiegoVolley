@@ -27,7 +27,7 @@ class GlobalStatsSection extends ConsumerWidget {
           children: [
             Expanded(
               child: Text(
-                'Estadísticas globales',
+                'Estadísticas de jugadores',
                 style: theme.textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w700,
                 ),
@@ -286,7 +286,7 @@ class _ActionLeaders extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Text(
-          'Los mejores por fundamento',
+          'Jugadores mas eficientes',
           style: theme.textTheme.titleSmall?.copyWith(
             fontWeight: FontWeight.w700,
           ),

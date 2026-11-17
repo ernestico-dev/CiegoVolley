@@ -45,7 +45,9 @@ class ScoreBoard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(999),
                   ),
                   child: Text(
-                    'Set ${draft.currentSet} de ${draft.setsCount}',
+                    draft.allSetsPlayed
+                        ? 'Partido terminado'
+                        : 'Set ${draft.currentSet} de ${draft.setsCount}',
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                       color: scheme.onPrimaryContainer,
@@ -55,7 +57,7 @@ class ScoreBoard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Sets ${draft.homeSetsWon} - ${draft.awaySetsWon}',
+                    'Sets ${draft.setsScore} · al mejor de ${draft.setsCount}',
                     style: theme.textTheme.labelMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                       fontWeight: FontWeight.w600,

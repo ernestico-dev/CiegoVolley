@@ -217,18 +217,24 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
     if (next == null) return;
 
     if (next.allSetsPlayed) {
+      final winner = next.isDraw
+          ? 'Empate ${next.setsScore}'
+          : 'Gana ${next.homeSetsWon > next.awaySetsWon ? next.homeTeam.name : next.awayTeam.name} '
+                '${next.setsScore}';
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Partido completo: ${next.homeSetsWon}-${next.awaySetsWon}. '
-            'Pulsa Finalizar para guardarlo.',
+            'Partido completo. $winner. Pulsa Finalizar para guardarlo.',
           ),
         ),
       );
     } else {
       messenger.showSnackBar(
         SnackBar(
-          content: Text('Set cerrado. Empieza el set ${next.currentSet}.'),
+          content: Text(
+            'Set cerrado (${next.setsScore}). Empieza el set '
+            '${next.currentSet} de ${next.setsCount}.',
+          ),
         ),
       );
     }
