@@ -23,7 +23,7 @@ class MatchDraftController extends Notifier<MatchDraft?> {
     required Team awayTeam,
     required List<TeamMember> homePlayers,
     required List<TeamMember> awayPlayers,
-    int setsCount = 1,
+    int setsCount = 3,
   }) {
     state = MatchDraft(
       tournament: tournament,
@@ -31,7 +31,12 @@ class MatchDraftController extends Notifier<MatchDraft?> {
       awayTeam: awayTeam,
       homePlayers: homePlayers,
       awayPlayers: awayPlayers,
-      setsCount: setsCount.clamp(1, 5),
+      // Solo se juega a 1, 3 o 5 sets.
+      setsCount: switch (setsCount) {
+        1 => 1,
+        5 => 5,
+        _ => 3,
+      },
     );
   }
 
@@ -120,6 +125,16 @@ class MatchDraftController extends Notifier<MatchDraft?> {
       awayScore: 0,
     );
     return true;
+  }
+
+  /// Pone a cero los puntos del set en juego sin tocar los sets ya cerrados.
+  ///
+  /// Sirve para corregir un set que se estaba apuntando mal.
+  void resetCurrentSet() {
+    final draft = state;
+    if (draft == null || draft.allSetsPlayed) return;
+
+    state = draft.copyWith(homeScore: 0, awayScore: 0);
   }
 
   /// Deshace el último set cerrado y devuelve sus puntos al marcador.

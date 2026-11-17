@@ -536,7 +536,7 @@ class _SetsSelector extends StatelessWidget {
         Wrap(
           spacing: 8,
           children: [
-            for (var sets = 1; sets <= 5; sets++)
+            for (final sets in const [1, 3, 5])
               ChoiceChip(
                 label: Text('$sets'),
                 selected: value == sets,
@@ -546,11 +546,9 @@ class _SetsSelector extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          [
-            'Al mejor de $value sets: gana el primero que consiga '
-                '${value ~/ 2 + 1} set${value ~/ 2 + 1 == 1 ? '' : 's'}.',
-            if (value.isEven) 'Si acaban empatados, el partido es empate.',
-          ].join(' '),
+          'Al mejor de $value sets: gana el primero que consiga '
+          '${(value + 1) ~/ 2} set${(value + 1) ~/ 2 == 1 ? '' : 's'}. '
+          'Nunca hay empate.',
           style: theme.textTheme.bodySmall?.copyWith(
             color: theme.colorScheme.onSurfaceVariant,
           ),

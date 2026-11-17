@@ -75,7 +75,7 @@ class PlayerStatsCarouselState extends State<PlayerStatsCarousel> {
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
                 isDense: true,
-                hintText: 'Buscar jugador por nombre',
+                hintText: 'Buscar',
                 prefixIcon: const Icon(Icons.search, size: 20),
                 suffixIcon: _query.isEmpty
                     ? null
@@ -138,13 +138,6 @@ class PlayerStatsCarouselState extends State<PlayerStatsCarousel> {
                       icon: const Icon(Icons.chevron_right),
                     ),
                   ],
-                ),
-              ),
-              Text(
-                'Desliza a los lados o usa las flechas para cambiar de jugador.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],

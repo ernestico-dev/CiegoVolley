@@ -143,27 +143,40 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
                       label: const Text('Finalizar partido'),
                     )
                   else
-                    Row(
-                      children: [
-                        Expanded(
-                          flex: 3,
-                          child: FilledButton.icon(
-                            onPressed: _saving ? null : () => _closeSet(draft),
-                            icon: const Icon(Icons.done_all),
-                            label: Text('Cerrar set ${draft.currentSet}'),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          flex: 2,
-                          child: OutlinedButton(
-                            onPressed: _saving ? null : () => _finish(draft),
-                            child: const Text('Finalizar'),
-                          ),
-                        ),
-                      ],
+                    FilledButton.icon(
+                      onPressed: _saving ? null : () => _closeSet(draft),
+                      icon: const Icon(Icons.done_all),
+                      label: Text('Cerrar set ${draft.currentSet}'),
                     ),
                   const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed:
+                              _saving ||
+                                  draft.allSetsPlayed ||
+                                  (draft.homeScore == 0 && draft.awayScore == 0)
+                              ? null
+                              : () => _resetCurrentSet(draft),
+                          icon: const Icon(
+                            Icons.cleaning_services_outlined,
+                            size: 18,
+                          ),
+                          label: const Text('Reiniciar set'),
+                        ),
+                      ),
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: _saving || draft.completedSets.isEmpty
+                              ? null
+                              : () => _undoSet(draft),
+                          icon: const Icon(Icons.undo, size: 18),
+                          label: const Text('Set anterior'),
+                        ),
+                      ),
+                    ],
+                  ),
                   TextButton.icon(
                     onPressed: _saving ? null : _reset,
                     icon: const Icon(Icons.restart_alt, size: 18),
@@ -217,14 +230,14 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
     if (next == null) return;
 
     if (next.allSetsPlayed) {
-      final winner = next.isDraw
-          ? 'Empate ${next.setsScore}'
-          : 'Gana ${next.homeSetsWon > next.awaySetsWon ? next.homeTeam.name : next.awayTeam.name} '
-                '${next.setsScore}';
+      final winner = next.homeSetsWon > next.awaySetsWon
+          ? next.homeTeam.name
+          : next.awayTeam.name;
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'Partido completo. $winner. Pulsa Finalizar para guardarlo.',
+            'Partido completo. Gana $winner ${next.setsScore}. '
+            'Pulsa Finalizar para guardarlo.',
           ),
         ),
       );
@@ -238,6 +251,45 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
         ),
       );
     }
+  }
+
+  /// Pone a cero el set en juego (los sets cerrados no se tocan).
+  void _resetCurrentSet(MatchDraft draft) {
+    final messenger = ScaffoldMessenger.of(context);
+    final setNumber = draft.currentSet;
+    ref.read(matchDraftProvider.notifier).resetCurrentSet();
+
+    messenger.showSnackBar(SnackBar(content: Text('Set $setNumber a cero.')));
+  }
+
+  /// Reabre el último set cerrado para corregir su marcador.
+  Future<void> _undoSet(MatchDraft draft) async {
+    final last = draft.completedSets.last;
+    final number = draft.completedSets.length;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Volver al set anterior?'),
+        content: Text(
+          'Se reabrirá el set $number con el marcador '
+          '${last.home}-${last.away} para corregirlo.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text('Volver al set $number'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+    ref.read(matchDraftProvider.notifier).undoLastSet();
   }
 
   Future<void> _reset() async {
@@ -268,6 +320,38 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
   }
 
   Future<void> _finish(MatchDraft draft) async {
+    // No se guarda un partido sin ganador: no hay empates.
+    if (!draft.allSetsPlayed) {
+      final leave = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('El partido aún no tiene ganador'),
+          content: Text(
+            'Se juega a ${draft.setsCount} sets y gana el primero que consiga '
+            '${draft.setsToWin}. Cierra el set ${draft.currentSet} o vuelve al '
+            'set anterior para corregir el marcador.\n\n'
+            'Si sales ahora, el partido no se guardará.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Seguir jugando'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Salir sin guardar'),
+            ),
+          ],
+        ),
+      );
+
+      if (leave == true) {
+        ref.read(matchDraftProvider.notifier).clear();
+        if (mounted) context.pop();
+      }
+      return;
+    }
+
     final choice = await showDialog<_FinishChoice>(
       context: context,
       builder: (dialogContext) => AlertDialog(

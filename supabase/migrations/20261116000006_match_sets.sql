@@ -1,7 +1,7 @@
 -- CiegoVolley · partidos por sets
 -- Ejecútalo después de 20261116000005_avatars_notifications.sql.
 
--- Cuántos sets tiene el partido (1 a 5).
+-- Cuántos sets tiene el partido: solo 1, 3 o 5.
 alter table public.matches
   add column if not exists sets_count int not null default 1;
 
@@ -9,17 +9,9 @@ alter table public.matches
 alter table public.matches
   add column if not exists sets jsonb not null default '[]'::jsonb;
 
-do $$
-begin
-  if not exists (
-    select 1
-    from pg_constraint
-    where conname = 'matches_sets_count_check'
-      and conrelid = 'public.matches'::regclass
-  ) then
-    alter table public.matches
-      add constraint matches_sets_count_check
-      check (sets_count between 1 and 5);
-  end if;
-end;
-$$;
+-- Se juega al mejor de 1, 3 o 5: nunca hay empate.
+alter table public.matches
+  drop constraint if exists matches_sets_count_check;
+alter table public.matches
+  add constraint matches_sets_count_check
+  check (sets_count in (1, 3, 5));

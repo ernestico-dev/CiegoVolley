@@ -204,25 +204,57 @@ void main() {
     expect(draft.completedSets.length, 3);
   });
 
-  test('con 2 sets un 1-1 es empate', () {
+  test('solo se juega a 1, 3 o 5 sets', () {
+    for (final sets in const [2, 4]) {
+      controller.start(
+        tournament: tournament,
+        homeTeam: homeTeam,
+        awayTeam: awayTeam,
+        homePlayers: const [homePlayer],
+        awayPlayers: const [awayPlayer],
+        setsCount: sets,
+      );
+      expect(
+        container.read(matchDraftProvider)!.setsCount,
+        3,
+        reason: '$sets sets no está permitido',
+      );
+    }
+
     controller.start(
       tournament: tournament,
       homeTeam: homeTeam,
       awayTeam: awayTeam,
       homePlayers: const [homePlayer],
       awayPlayers: const [awayPlayer],
-      setsCount: 2,
+      setsCount: 1,
     );
+    expect(container.read(matchDraftProvider)!.setsToWin, 1);
 
+    controller.start(
+      tournament: tournament,
+      homeTeam: homeTeam,
+      awayTeam: awayTeam,
+      homePlayers: const [homePlayer],
+      awayPlayers: const [awayPlayer],
+      setsCount: 5,
+    );
+    expect(container.read(matchDraftProvider)!.setsToWin, 3);
+  });
+
+  test('reiniciar el set actual no toca los sets ya cerrados', () {
     controller.addPoint(home: true);
     expect(controller.closeSet(), isTrue);
     controller.addPoint(home: false);
-    expect(controller.closeSet(), isTrue);
+    controller.addPoint(home: false);
+
+    controller.resetCurrentSet();
 
     final draft = container.read(matchDraftProvider)!;
-    expect(draft.allSetsPlayed, isTrue);
-    expect(draft.isDraw, isTrue);
-    expect(draft.setsScore, '1-1');
+    expect(draft.completedSets.length, 1);
+    expect(draft.homeScore, 0);
+    expect(draft.awayScore, 0);
+    expect(draft.currentSet, 2);
   });
 
   test('deshacer el último set devuelve sus puntos al marcador', () {

@@ -74,11 +74,11 @@ class MatchDraft {
 
   /// Sets que hay que ganar para llevarse el partido.
   ///
-  /// Al mejor de N: en 3 sets gana el primero que llega a 2, en 5 el que llega
-  /// a 3. Con un número par (2 o 4) se juegan todos y puede acabar en empate.
-  int get setsToWin => setsCount ~/ 2 + 1;
+  /// Solo se juega a 1, 3 o 5 sets: en 3 gana el primero que llega a 2 y en 5
+  /// el que llega a 3. Nunca hay empate.
+  int get setsToWin => (setsCount + 1) ~/ 2;
 
-  /// El partido ya tiene ganador (o empate, si se jugaron todos los sets).
+  /// El partido ya tiene ganador.
   bool get hasWinner => homeSetsWon >= setsToWin || awaySetsWon >= setsToWin;
 
   /// Número del set en juego (1..setsCount).
@@ -86,14 +86,11 @@ class MatchDraft {
       ? completedSets.length.clamp(1, setsCount)
       : completedSets.length + 1;
 
-  /// El partido terminó: alguien llegó a [setsToWin] o se jugaron todos.
-  bool get allSetsPlayed => hasWinner || completedSets.length >= setsCount;
+  /// El partido terminó: alguien llegó a [setsToWin].
+  bool get allSetsPlayed => hasWinner;
 
   /// Resultado final por sets, p. ej. `2-1`.
   String get setsScore => '$homeSetsWon-$awaySetsWon';
-
-  /// Empate a sets: solo puede pasar con un número par de sets.
-  bool get isDraw => allSetsPlayed && homeSetsWon == awaySetsWon;
 
   /// Un set solo se puede cerrar si no está empatado y hay algún punto.
   bool get canCloseSet {

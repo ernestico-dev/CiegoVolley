@@ -160,7 +160,7 @@ class _Leaderboard extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Text(
-                '% de aciertos, partidos ganados y torneos jugados.',
+                'Efectividad + partidos ganados + torneos jugados.',
                 style: theme.textTheme.labelSmall?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
