@@ -113,9 +113,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const _LoginHeader(),
-                    if (sessionEnded) ...[
+                    if (sessionEnded != null) ...[
                       const SizedBox(height: 20),
                       _SessionEndedNotice(
+                        message: sessionEnded,
                         onDismiss: () =>
                             ref.read(sessionEndedProvider.notifier).clear(),
                       ),
@@ -278,8 +279,9 @@ class _LoginHeader extends StatelessWidget {
 
 /// Aviso de que la sesión anterior se cerró sola (token caducado, etc.).
 class _SessionEndedNotice extends StatelessWidget {
-  const _SessionEndedNotice({required this.onDismiss});
+  const _SessionEndedNotice({required this.message, required this.onDismiss});
 
+  final String message;
   final VoidCallback onDismiss;
 
   @override
@@ -304,8 +306,7 @@ class _SessionEndedNotice extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              'Tu sesión se cerró porque caducó. Vuelve a entrar para '
-              'continuar.',
+              message,
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSecondaryContainer,
               ),

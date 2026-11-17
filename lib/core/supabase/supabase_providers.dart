@@ -56,7 +56,9 @@ class SessionNotifier extends Notifier<Session?> {
           );
 
           if (reason != SignOutReason.userInitiated) {
-            ref.read(sessionEndedProvider.notifier).mark();
+            ref
+                .read(sessionEndedProvider.notifier)
+                .mark(reason: reason, fromBroadcast: state.fromBroadcast);
           }
 
           this.state = null;
@@ -72,21 +74,32 @@ class SessionNotifier extends Notifier<Session?> {
   }
 }
 
-/// `true` cuando la sesión se cerró sin que el usuario lo pidiera.
+/// Mensaje que explica por qué se cerró la sesión sin pedirlo el usuario.
 ///
-/// El login lo usa para explicar por qué ha vuelto a la pantalla de entrada.
-final sessionEndedProvider = NotifierProvider<SessionEndedNotifier, bool>(
+/// `null` cuando no hay nada que explicar. El login lo muestra como aviso.
+final sessionEndedProvider = NotifierProvider<SessionEndedNotifier, String?>(
   SessionEndedNotifier.new,
 );
 
-class SessionEndedNotifier extends Notifier<bool> {
+class SessionEndedNotifier extends Notifier<String?> {
   @override
-  bool build() => false;
+  String? build() => null;
 
-  void mark() => state = true;
+  void mark({SignOutReason? reason, bool fromBroadcast = false}) {
+    state = switch (reason) {
+      _ when fromBroadcast =>
+        'Tu sesión se cerró en otra pestaña o dispositivo. '
+            'Vuelve a entrar para continuar.',
+      SignOutReason.sessionExpired =>
+        'Tu sesión caducó. Vuelve a entrar para continuar.',
+      SignOutReason.sessionMissing =>
+        'No pudimos recuperar tu sesión guardada. Vuelve a entrar.',
+      _ => 'La sesión se cerró. Vuelve a entrar para continuar.',
+    };
+  }
 
   void clear() {
-    if (state) state = false;
+    if (state != null) state = null;
   }
 }
 
