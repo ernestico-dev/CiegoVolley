@@ -64,39 +64,77 @@ class MatchDraftController extends Notifier<MatchDraft?> {
     }
   }
 
-  void register(String userId, MatchAction action, {required bool success}) {
+  void register(
+    String userId,
+    MatchAction action, {
+    bool? success,
+    MatchActionOutcome? outcome,
+  }) {
     final draft = state;
     if (draft == null) return;
 
     final key = (userId: userId, action: action);
     final current = draft.tallies[key] ?? const MatchTally();
+    final effectiveOutcome =
+        outcome ??
+        (success == true
+            ? MatchActionOutcome.positive
+            : MatchActionOutcome.error);
 
     state = draft.copyWith(
       tallies: {
         ...draft.tallies,
-        key: success
-            ? current.copyWith(successes: current.successes + 1)
-            : current.copyWith(failures: current.failures + 1),
+        key: switch (effectiveOutcome) {
+          MatchActionOutcome.positive => current.copyWith(
+            successes: current.successes + 1,
+          ),
+          MatchActionOutcome.error => current.copyWith(
+            failures: current.failures + 1,
+          ),
+          MatchActionOutcome.neutral => current.copyWith(
+            neutrals: current.neutrals + 1,
+          ),
+          MatchActionOutcome.blocked => current.copyWith(
+            blocked: current.blocked + 1,
+          ),
+        },
       },
     );
   }
 
   /// Resta un acierto o un fallo (para corregir un toque de más).
-  void undo(String userId, MatchAction action, {required bool success}) {
+  void undo(
+    String userId,
+    MatchAction action, {
+    bool? success,
+    MatchActionOutcome? outcome,
+  }) {
     final draft = state;
     if (draft == null) return;
 
     final key = (userId: userId, action: action);
     final current = draft.tallies[key];
     if (current == null) return;
+    final effectiveOutcome =
+        outcome ??
+        (success == true
+            ? MatchActionOutcome.positive
+            : MatchActionOutcome.error);
 
-    final next = success
-        ? current.copyWith(
-            successes: current.successes > 0 ? current.successes - 1 : 0,
-          )
-        : current.copyWith(
-            failures: current.failures > 0 ? current.failures - 1 : 0,
-          );
+    final next = switch (effectiveOutcome) {
+      MatchActionOutcome.positive => current.copyWith(
+        successes: current.successes > 0 ? current.successes - 1 : 0,
+      ),
+      MatchActionOutcome.error => current.copyWith(
+        failures: current.failures > 0 ? current.failures - 1 : 0,
+      ),
+      MatchActionOutcome.neutral => current.copyWith(
+        neutrals: current.neutrals > 0 ? current.neutrals - 1 : 0,
+      ),
+      MatchActionOutcome.blocked => current.copyWith(
+        blocked: current.blocked > 0 ? current.blocked - 1 : 0,
+      ),
+    };
 
     final tallies = {...draft.tallies};
     if (next.total == 0) {

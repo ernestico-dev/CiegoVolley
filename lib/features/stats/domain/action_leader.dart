@@ -8,6 +8,8 @@ class ActionLeader {
     required this.name,
     required this.successes,
     required this.failures,
+    this.neutrals = 0,
+    this.blocked = 0,
   });
 
   final MatchAction action;
@@ -15,18 +17,25 @@ class ActionLeader {
   final String name;
   final int successes;
   final int failures;
+  final int neutrals;
+  final int blocked;
 
-  int get attempts => successes + failures;
+  int get attempts => successes + failures + neutrals + blocked;
 
-  int get successPercent {
+  int get efficiencyPercent {
     if (attempts == 0) return 0;
-    return (successes * 100 / attempts).round();
+    final numerator = action == MatchAction.attack
+        ? successes - failures - blocked
+        : successes - failures;
+    return (numerator * 100 / attempts).round();
   }
+
+  int get successPercent => efficiencyPercent;
 
   /// Orden dentro de una acción: mejor porcentaje y más aciertos.
   static int compare(ActionLeader a, ActionLeader b) {
-    if (a.successPercent != b.successPercent) {
-      return b.successPercent.compareTo(a.successPercent);
+    if (a.efficiencyPercent != b.efficiencyPercent) {
+      return b.efficiencyPercent.compareTo(a.efficiencyPercent);
     }
     if (a.successes != b.successes) {
       return b.successes.compareTo(a.successes);

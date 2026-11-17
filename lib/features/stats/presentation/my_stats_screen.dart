@@ -317,7 +317,7 @@ class _ActionsTable extends StatelessWidget {
                     cell('Acción', headerStyle),
                     cell('Aciertos', headerStyle, center: true),
                     cell('Fallos', headerStyle, center: true),
-                    cell('%', headerStyle, center: true),
+                    cell('Efic.', headerStyle, center: true),
                   ],
                 ),
                 for (final action in MatchAction.values)
@@ -362,7 +362,7 @@ class _ActionsTable extends StatelessWidget {
                       cell(
                         player.tallyFor(action).total == 0
                             ? '—'
-                            : '${player.tallyFor(action).successPercent}%',
+                            : '${player.tallyFor(action).efficiencyPercentFor(action)}%',
                         cellStyle?.copyWith(fontWeight: FontWeight.w700),
                         center: true,
                       ),

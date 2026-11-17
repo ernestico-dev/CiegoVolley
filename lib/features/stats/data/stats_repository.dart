@@ -32,6 +32,7 @@ class StatsRepository {
           .from('match_player_stats')
           .select(
             'match_id, team_id, user_id, action, successes, failures, '
+            'neutrals, blocked, '
             'profile:profiles!match_player_stats_user_id_fkey(full_name, email)',
           ),
       _client
@@ -84,6 +85,8 @@ class StatsRepository {
 
       final successes = (row['successes'] as num?)?.toInt() ?? 0;
       final failures = (row['failures'] as num?)?.toInt() ?? 0;
+      final neutrals = (row['neutrals'] as num?)?.toInt() ?? 0;
+      final blocked = (row['blocked'] as num?)?.toInt() ?? 0;
 
       final profile = row['profile'] as Map<String, dynamic>? ?? const {};
       final name = _displayName(profile);
@@ -96,6 +99,7 @@ class StatsRepository {
       player.failures += failures;
 
       actionTotals[action] = (actionTotals[action] ?? 0) + successes + failures;
+      actionTotals[action] = (actionTotals[action] ?? 0) + neutrals + blocked;
 
       final byPlayer = actionByPlayer[action]!;
       final actionAcc = byPlayer.putIfAbsent(
@@ -104,6 +108,8 @@ class StatsRepository {
       );
       actionAcc.successes += successes;
       actionAcc.failures += failures;
+      actionAcc.neutrals += neutrals;
+      actionAcc.blocked += blocked;
 
       // Un partido cuenta una sola vez por jugador.
       if (!countedMatches.add('$userId|$matchId')) continue;
@@ -134,6 +140,8 @@ class StatsRepository {
                       action: ActionTally(
                         successes: actionByPlayer[action]![p.userId]!.successes,
                         failures: actionByPlayer[action]![p.userId]!.failures,
+                        neutrals: actionByPlayer[action]![p.userId]!.neutrals,
+                        blocked: actionByPlayer[action]![p.userId]!.blocked,
                       ),
                 },
               ),
@@ -145,7 +153,11 @@ class StatsRepository {
     for (final action in MatchAction.values) {
       final candidates =
           actionByPlayer[action]!.values
-              .where((a) => a.successes + a.failures >= _minAttemptsForLeader)
+              .where(
+                (a) =>
+                    a.successes + a.failures + a.neutrals + a.blocked >=
+                    _minAttemptsForLeader,
+              )
               .map(
                 (a) => ActionLeader(
                   action: a.action,
@@ -153,6 +165,8 @@ class StatsRepository {
                   name: a.name,
                   successes: a.successes,
                   failures: a.failures,
+                  neutrals: a.neutrals,
+                  blocked: a.blocked,
                 ),
               )
               .toList()
@@ -269,6 +283,8 @@ class _ActionAccumulator {
   final MatchAction action;
   int successes = 0;
   int failures = 0;
+  int neutrals = 0;
+  int blocked = 0;
 }
 
 class _TeamAccumulator {

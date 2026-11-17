@@ -305,7 +305,7 @@ class PlayerStatsPage extends StatelessWidget {
             best == null
                 ? 'Sin acciones registradas'
                 : 'Mejor fundamento: ${best.label} '
-                      '(${player.tallyFor(best).successPercent}%)',
+                      '(${player.tallyFor(best).efficiencyPercentFor(best)}%)',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelSmall?.copyWith(

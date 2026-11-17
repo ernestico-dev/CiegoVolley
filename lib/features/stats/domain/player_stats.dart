@@ -2,17 +2,35 @@ import '../../matches/domain/match_action.dart';
 
 /// Aciertos y fallos de una acción concreta.
 class ActionTally {
-  const ActionTally({this.successes = 0, this.failures = 0});
+  const ActionTally({
+    this.successes = 0,
+    this.failures = 0,
+    this.neutrals = 0,
+    this.blocked = 0,
+  });
 
   final int successes;
   final int failures;
+  final int neutrals;
+  final int blocked;
 
-  int get total => successes + failures;
+  int get total => successes + failures + neutrals + blocked;
 
   int get successPercent {
     if (total == 0) return 0;
     return (successes * 100 / total).round();
   }
+
+  double efficiencyFor(MatchAction action) => switch (action) {
+    MatchAction.serve => _percent(successes - failures),
+    MatchAction.attack => _percent(successes - failures - blocked),
+    MatchAction.defense => _percent(successes - failures),
+    MatchAction.block => _percent(successes - failures),
+  };
+
+  int efficiencyPercentFor(MatchAction action) => efficiencyFor(action).round();
+
+  double _percent(int numerator) => total == 0 ? 0 : numerator * 100 / total;
 }
 
 /// Estadísticas acumuladas de un jugador en toda la plataforma.
@@ -64,8 +82,10 @@ class PlayerStats {
         continue;
       }
       final current = tallyFor(best);
-      if (tally.successPercent > current.successPercent ||
-          (tally.successPercent == current.successPercent &&
+      final efficiency = tally.efficiencyPercentFor(action);
+      final currentEfficiency = current.efficiencyPercentFor(best);
+      if (efficiency > currentEfficiency ||
+          (efficiency == currentEfficiency &&
               tally.successes > current.successes)) {
         best = action;
       }

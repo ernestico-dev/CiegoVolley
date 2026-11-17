@@ -22,8 +22,10 @@ class PlayerStatsPanel extends StatelessWidget {
   final TeamMember player;
   final String teamName;
   final MatchDraft draft;
-  final void Function(MatchAction action, {required bool success}) onRegister;
-  final void Function(MatchAction action, {required bool success}) onUndo;
+  final void Function(MatchAction action, {required MatchActionOutcome outcome})
+  onRegister;
+  final void Function(MatchAction action, {required MatchActionOutcome outcome})
+  onUndo;
   final VoidCallback onClose;
 
   static IconData iconFor(MatchAction action) {
@@ -89,10 +91,8 @@ class PlayerStatsPanel extends StatelessWidget {
               _ActionRow(
                 action: action,
                 tally: draft.tallyFor(player.userId, action),
-                onSuccess: () => onRegister(action, success: true),
-                onFailure: () => onRegister(action, success: false),
-                onUndoSuccess: () => onUndo(action, success: true),
-                onUndoFailure: () => onUndo(action, success: false),
+                onRegister: (outcome) => onRegister(action, outcome: outcome),
+                onUndo: (outcome) => onUndo(action, outcome: outcome),
               ),
               if (action != MatchAction.values.last) const SizedBox(height: 6),
             ],
@@ -115,27 +115,25 @@ class _ActionRow extends StatelessWidget {
   const _ActionRow({
     required this.action,
     required this.tally,
-    required this.onSuccess,
-    required this.onFailure,
-    required this.onUndoSuccess,
-    required this.onUndoFailure,
+    required this.onRegister,
+    required this.onUndo,
   });
 
   final MatchAction action;
   final MatchTally tally;
-  final VoidCallback onSuccess;
-  final VoidCallback onFailure;
-  final VoidCallback onUndoSuccess;
-  final VoidCallback onUndoFailure;
+  final void Function(MatchActionOutcome outcome) onRegister;
+  final void Function(MatchActionOutcome outcome) onUndo;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final outcomes = _outcomesFor(action);
 
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 96,
+          width: 82,
           child: Row(
             children: [
               Icon(
@@ -157,36 +155,72 @@ class _ActionRow extends StatelessWidget {
         ),
         const SizedBox(width: 6),
         Expanded(
-          child: _TallyButton(
-            success: true,
-            count: tally.successes,
-            onTap: onSuccess,
-            onLongPress: onUndoSuccess,
-          ),
-        ),
-        const SizedBox(width: 6),
-        Expanded(
-          child: _TallyButton(
-            success: false,
-            count: tally.failures,
-            onTap: onFailure,
-            onLongPress: onUndoFailure,
+          child: Wrap(
+            spacing: 4,
+            runSpacing: 4,
+            alignment: WrapAlignment.end,
+            children: [
+              for (final outcome in outcomes)
+                _OutcomeButton(
+                  action: action,
+                  outcome: outcome,
+                  count: _countFor(tally, outcome),
+                  onTap: () => onRegister(outcome),
+                  onLongPress: () => onUndo(outcome),
+                ),
+            ],
           ),
         ),
       ],
     );
   }
+
+  static List<MatchActionOutcome> _outcomesFor(MatchAction action) {
+    return switch (action) {
+      MatchAction.serve => const [
+        MatchActionOutcome.positive,
+        MatchActionOutcome.error,
+        MatchActionOutcome.neutral,
+      ],
+      MatchAction.attack => const [
+        MatchActionOutcome.positive,
+        MatchActionOutcome.error,
+        MatchActionOutcome.blocked,
+        MatchActionOutcome.neutral,
+      ],
+      MatchAction.defense => const [
+        MatchActionOutcome.positive,
+        MatchActionOutcome.error,
+      ],
+      MatchAction.block => const [
+        MatchActionOutcome.positive,
+        MatchActionOutcome.error,
+        MatchActionOutcome.neutral,
+      ],
+    };
+  }
+
+  static int _countFor(MatchTally tally, MatchActionOutcome outcome) {
+    return switch (outcome) {
+      MatchActionOutcome.positive => tally.successes,
+      MatchActionOutcome.error => tally.failures,
+      MatchActionOutcome.neutral => tally.neutrals,
+      MatchActionOutcome.blocked => tally.blocked,
+    };
+  }
 }
 
-class _TallyButton extends StatelessWidget {
-  const _TallyButton({
-    required this.success,
+class _OutcomeButton extends StatelessWidget {
+  const _OutcomeButton({
+    required this.action,
+    required this.outcome,
     required this.count,
     required this.onTap,
     required this.onLongPress,
   });
 
-  final bool success;
+  final MatchAction action;
+  final MatchActionOutcome outcome;
   final int count;
   final VoidCallback onTap;
   final VoidCallback onLongPress;
@@ -194,12 +228,18 @@ class _TallyButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final background = success
-        ? scheme.secondaryContainer
-        : scheme.errorContainer;
-    final foreground = success
-        ? scheme.onSecondaryContainer
-        : scheme.onErrorContainer;
+    final background = switch (outcome) {
+      MatchActionOutcome.positive => scheme.secondaryContainer,
+      MatchActionOutcome.error => scheme.errorContainer,
+      MatchActionOutcome.neutral => scheme.surfaceContainerHighest,
+      MatchActionOutcome.blocked => scheme.tertiaryContainer,
+    };
+    final foreground = switch (outcome) {
+      MatchActionOutcome.positive => scheme.onSecondaryContainer,
+      MatchActionOutcome.error => scheme.onErrorContainer,
+      MatchActionOutcome.neutral => scheme.onSurface,
+      MatchActionOutcome.blocked => scheme.onTertiaryContainer,
+    };
 
     return Material(
       color: background,
@@ -209,18 +249,24 @@ class _TallyButton extends StatelessWidget {
         onLongPress: onLongPress,
         borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                success ? Icons.check_circle_outline : Icons.cancel_outlined,
+                switch (outcome) {
+                  MatchActionOutcome.positive => Icons.check_circle_outline,
+                  MatchActionOutcome.error => Icons.cancel_outlined,
+                  MatchActionOutcome.neutral => Icons.remove_circle_outline,
+                  MatchActionOutcome.blocked => Icons.block_outlined,
+                },
                 size: 16,
                 color: foreground,
               ),
               const SizedBox(width: 4),
               Text(
-                success ? 'Éxito' : 'Fallo',
+                _labelFor(action, outcome),
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -248,5 +294,18 @@ class _TallyButton extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  static String _labelFor(MatchAction action, MatchActionOutcome outcome) {
+    return switch ((action, outcome)) {
+      (MatchAction.serve, MatchActionOutcome.positive) => 'Ace',
+      (MatchAction.attack, MatchActionOutcome.positive) => 'Punto',
+      (MatchAction.attack, MatchActionOutcome.blocked) => 'Bloqueado',
+      (MatchAction.defense, MatchActionOutcome.positive) => 'Positivo',
+      (MatchAction.block, MatchActionOutcome.positive) => 'Punto',
+      (_, MatchActionOutcome.error) => 'Error',
+      (_, MatchActionOutcome.neutral) => 'Neutro',
+      _ => 'Resultado',
+    };
   }
 }

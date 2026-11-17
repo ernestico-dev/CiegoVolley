@@ -55,6 +55,8 @@ class MatchRepository {
             'action': entry.key.action.dbValue,
             'successes': entry.value.successes,
             'failures': entry.value.failures,
+            'neutrals': entry.value.neutrals,
+            'blocked': entry.value.blocked,
           },
     ];
 

@@ -79,6 +79,25 @@ void main() {
       expect(stats.tallyFor(MatchAction.attack).successPercent, 80);
       expect(stats.tallyFor(MatchAction.block).total, 0);
     });
+
+    test('calcula las fórmulas oficiales de efectividad', () {
+      const serve = ActionTally(successes: 8, failures: 2, neutrals: 10);
+      expect(serve.efficiencyPercentFor(MatchAction.serve), 30);
+
+      const attack = ActionTally(
+        successes: 10,
+        failures: 3,
+        neutrals: 4,
+        blocked: 3,
+      );
+      expect(attack.efficiencyPercentFor(MatchAction.attack), 20);
+
+      const defense = ActionTally(successes: 12, failures: 4);
+      expect(defense.efficiencyPercentFor(MatchAction.defense), 50);
+
+      const block = ActionTally(successes: 5, failures: 2, neutrals: 3);
+      expect(block.efficiencyPercentFor(MatchAction.block), 30);
+    });
   });
 
   group('ActionLeader', () {

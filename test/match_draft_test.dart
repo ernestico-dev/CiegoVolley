@@ -103,6 +103,23 @@ void main() {
     expect(draft.tallyFor('u2', MatchAction.attack).failures, 1);
   });
 
+  test('registra resultados neutrales y ataques bloqueados', () {
+    controller.register(
+      'u1',
+      MatchAction.serve,
+      outcome: MatchActionOutcome.neutral,
+    );
+    controller.register(
+      'u1',
+      MatchAction.attack,
+      outcome: MatchActionOutcome.blocked,
+    );
+
+    final draft = container.read(matchDraftProvider)!;
+    expect(draft.tallyFor('u1', MatchAction.serve).neutrals, 1);
+    expect(draft.tallyFor('u1', MatchAction.attack).blocked, 1);
+  });
+
   test('reiniciar deja el marcador y las estadísticas a cero', () {
     controller.addPoint(home: true);
     controller.register('u1', MatchAction.defense, success: true);
