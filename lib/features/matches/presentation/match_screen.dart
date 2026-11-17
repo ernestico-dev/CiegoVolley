@@ -93,6 +93,9 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
                 onAwayRemove: () => ref
                     .read(matchDraftProvider.notifier)
                     .removePoint(home: false),
+                onUndoSet: draft.completedSets.isEmpty
+                    ? null
+                    : () => ref.read(matchDraftProvider.notifier).undoLastSet(),
               ),
             ),
             Expanded(
@@ -127,21 +130,43 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  FilledButton.icon(
-                    onPressed: _saving ? null : () => _finish(draft),
-                    icon: _saving
-                        ? const SizedBox(
-                            height: 18,
-                            width: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Icon(Icons.flag_outlined),
-                    label: const Text('Finalizar partido'),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton.icon(
+                  if (draft.allSetsPlayed)
+                    FilledButton.icon(
+                      onPressed: _saving ? null : () => _finish(draft),
+                      icon: _saving
+                          ? const SizedBox(
+                              height: 18,
+                              width: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.flag_outlined),
+                      label: const Text('Finalizar partido'),
+                    )
+                  else
+                    Row(
+                      children: [
+                        Expanded(
+                          flex: 3,
+                          child: FilledButton.icon(
+                            onPressed: _saving ? null : () => _closeSet(draft),
+                            icon: const Icon(Icons.done_all),
+                            label: Text('Cerrar set ${draft.currentSet}'),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          flex: 2,
+                          child: OutlinedButton(
+                            onPressed: _saving ? null : () => _finish(draft),
+                            child: const Text('Finalizar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 4),
+                  TextButton.icon(
                     onPressed: _saving ? null : _reset,
-                    icon: const Icon(Icons.restart_alt),
+                    icon: const Icon(Icons.restart_alt, size: 18),
                     label: const Text('Reiniciar partido'),
                   ),
                 ],
@@ -172,14 +197,51 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
     return null;
   }
 
+  /// Cierra el set en juego y avisa cuando ya no quedan más.
+  void _closeSet(MatchDraft draft) {
+    final messenger = ScaffoldMessenger.of(context);
+    final closed = ref.read(matchDraftProvider.notifier).closeSet();
+
+    if (!closed) {
+      messenger.showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Para cerrar el set el marcador no puede estar empatado ni a cero.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    final next = ref.read(matchDraftProvider);
+    if (next == null) return;
+
+    if (next.allSetsPlayed) {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            'Partido completo: ${next.homeSetsWon}-${next.awaySetsWon}. '
+            'Pulsa Finalizar para guardarlo.',
+          ),
+        ),
+      );
+    } else {
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Set cerrado. Empieza el set ${next.currentSet}.'),
+        ),
+      );
+    }
+  }
+
   Future<void> _reset() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('¿Reiniciar partido?'),
         content: const Text(
-          'El marcador volverá a cero y se borrarán las estadísticas '
-          'registradas hasta ahora.',
+          'El marcador volverá a cero, se borrarán los sets jugados y las '
+          'estadísticas registradas hasta ahora.',
         ),
         actions: [
           TextButton(
@@ -238,8 +300,9 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
         ),
         content: Text(
           choice == _FinishChoice.save
-              ? 'Se guardará el marcador y las estadísticas de los jugadores.'
-              : 'Se perderán el marcador y las estadísticas de este partido.',
+              ? 'Se guardará el resultado por sets y las estadísticas de los '
+                    'jugadores.'
+              : 'Se perderán el resultado y las estadísticas de este partido.',
         ),
         actions: [
           TextButton(

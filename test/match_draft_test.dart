@@ -45,6 +45,7 @@ void main() {
       awayTeam: awayTeam,
       homePlayers: const [homePlayer],
       awayPlayers: const [awayPlayer],
+      setsCount: 3,
     );
   });
 
@@ -118,6 +119,79 @@ void main() {
     final draft = container.read(matchDraftProvider)!;
     expect(draft.teamIdOf('u1'), 'home');
     expect(draft.teamIdOf('u2'), 'away');
+  });
+
+  test('el partido se juega al número de sets elegido', () {
+    final draft = container.read(matchDraftProvider)!;
+    expect(draft.setsCount, 3);
+    expect(draft.currentSet, 1);
+    expect(draft.allSetsPlayed, isFalse);
+  });
+
+  test('cerrar un set guarda su marcador y empieza el siguiente', () {
+    controller.addPoint(home: true);
+    controller.addPoint(home: true);
+    controller.addPoint(home: false);
+
+    expect(controller.closeSet(), isTrue);
+
+    var draft = container.read(matchDraftProvider)!;
+    expect(draft.completedSets.length, 1);
+    expect(draft.completedSets.single.home, 2);
+    expect(draft.completedSets.single.away, 1);
+    expect(draft.homeSetsWon, 1);
+    expect(draft.awaySetsWon, 0);
+    expect(draft.homeScore, 0);
+    expect(draft.awayScore, 0);
+    expect(draft.currentSet, 2);
+  });
+
+  test('no se cierra un set empatado ni a cero', () {
+    expect(controller.closeSet(), isFalse);
+
+    controller.addPoint(home: true);
+    controller.addPoint(home: false);
+    expect(controller.closeSet(), isFalse);
+
+    expect(container.read(matchDraftProvider)!.completedSets, isEmpty);
+  });
+
+  test('al cerrar todos los sets el partido queda completo', () {
+    for (var i = 0; i < 3; i++) {
+      controller.addPoint(home: true);
+      expect(controller.closeSet(), isTrue);
+    }
+
+    final draft = container.read(matchDraftProvider)!;
+    expect(draft.allSetsPlayed, isTrue);
+    expect(draft.homeSetsWon, 3);
+    expect(controller.closeSet(), isFalse);
+  });
+
+  test('deshacer el último set devuelve sus puntos al marcador', () {
+    controller.addPoint(home: false);
+
+    expect(controller.closeSet(), isTrue);
+    controller.undoLastSet();
+
+    final draft = container.read(matchDraftProvider)!;
+    expect(draft.completedSets, isEmpty);
+    expect(draft.awayScore, 1);
+    expect(draft.currentSet, 1);
+  });
+
+  test('reiniciar también borra los sets jugados', () {
+    controller.addPoint(home: true);
+    controller.closeSet();
+    controller.addPoint(home: false);
+    controller.closeSet();
+
+    controller.reset();
+
+    final draft = container.read(matchDraftProvider)!;
+    expect(draft.completedSets, isEmpty);
+    expect(draft.homeSetsWon, 0);
+    expect(draft.awaySetsWon, 0);
   });
 
   test('clear descarta el partido', () {

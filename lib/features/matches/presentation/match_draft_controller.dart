@@ -23,6 +23,7 @@ class MatchDraftController extends Notifier<MatchDraft?> {
     required Team awayTeam,
     required List<TeamMember> homePlayers,
     required List<TeamMember> awayPlayers,
+    int setsCount = 1,
   }) {
     state = MatchDraft(
       tournament: tournament,
@@ -30,6 +31,7 @@ class MatchDraftController extends Notifier<MatchDraft?> {
       awayTeam: awayTeam,
       homePlayers: homePlayers,
       awayPlayers: awayPlayers,
+      setsCount: setsCount.clamp(1, 5),
     );
   }
 
@@ -101,12 +103,52 @@ class MatchDraftController extends Notifier<MatchDraft?> {
     state = draft.copyWith(tallies: tallies);
   }
 
+  /// Cierra el set en juego y empieza el siguiente.
+  ///
+  /// Devuelve `false` si no se puede cerrar (empate, sin puntos o ya no
+  /// quedan sets).
+  bool closeSet() {
+    final draft = state;
+    if (draft == null || !draft.canCloseSet) return false;
+
+    state = draft.copyWith(
+      completedSets: [
+        ...draft.completedSets,
+        MatchSet(home: draft.homeScore, away: draft.awayScore),
+      ],
+      homeScore: 0,
+      awayScore: 0,
+    );
+    return true;
+  }
+
+  /// Deshace el último set cerrado y devuelve sus puntos al marcador.
+  void undoLastSet() {
+    final draft = state;
+    if (draft == null || draft.completedSets.isEmpty) return;
+
+    final last = draft.completedSets.last;
+    state = draft.copyWith(
+      completedSets: draft.completedSets.sublist(
+        0,
+        draft.completedSets.length - 1,
+      ),
+      homeScore: last.home,
+      awayScore: last.away,
+    );
+  }
+
   /// Marcador a cero y estadísticas limpias, sin salir del partido.
   void reset() {
     final draft = state;
     if (draft == null) return;
 
-    state = draft.copyWith(homeScore: 0, awayScore: 0, tallies: const {});
+    state = draft.copyWith(
+      completedSets: const [],
+      homeScore: 0,
+      awayScore: 0,
+      tallies: const {},
+    );
   }
 
   void clear() => state = null;

@@ -31,8 +31,11 @@ class MatchRepository {
           'tournament_id': draft.tournament.id,
           'home_team_id': draft.homeTeam.id,
           'away_team_id': draft.awayTeam.id,
-          'home_score': draft.homeScore,
-          'away_score': draft.awayScore,
+          // El resultado del partido son los sets ganados.
+          'home_score': draft.homeSetsWon,
+          'away_score': draft.awaySetsWon,
+          'sets_count': draft.setsCount,
+          'sets': [for (final set in draft.completedSets) set.toJson()],
           'status': 'finished',
           'stage': stage.dbValue,
           'created_by': user.id,

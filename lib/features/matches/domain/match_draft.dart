@@ -23,6 +23,18 @@ class MatchTally {
   }
 }
 
+/// Puntos de un set ya terminado.
+class MatchSet {
+  const MatchSet({required this.home, required this.away});
+
+  final int home;
+  final int away;
+
+  bool get isHomeWin => home > away;
+
+  Map<String, dynamic> toJson() => {'home': home, 'away': away};
+}
+
 /// Partido en curso. Vive en memoria hasta que se guarda al finalizar.
 class MatchDraft {
   const MatchDraft({
@@ -31,6 +43,8 @@ class MatchDraft {
     required this.awayTeam,
     required this.homePlayers,
     required this.awayPlayers,
+    this.setsCount = 1,
+    this.completedSets = const [],
     this.homeScore = 0,
     this.awayScore = 0,
     this.tallies = const {},
@@ -41,9 +55,35 @@ class MatchDraft {
   final Team awayTeam;
   final List<TeamMember> homePlayers;
   final List<TeamMember> awayPlayers;
+
+  /// Cuántos sets tiene el partido (entre 1 y 5).
+  final int setsCount;
+
+  /// Sets ya cerrados, en orden.
+  final List<MatchSet> completedSets;
+
+  /// Puntos del set que se está jugando.
   final int homeScore;
   final int awayScore;
   final Map<TallyKey, MatchTally> tallies;
+
+  /// Sets ganados por cada equipo (es el resultado final del partido).
+  int get homeSetsWon => completedSets.where((set) => set.isHomeWin).length;
+
+  int get awaySetsWon => completedSets.where((set) => !set.isHomeWin).length;
+
+  /// Número del set en juego (1..setsCount).
+  int get currentSet =>
+      completedSets.length >= setsCount ? setsCount : completedSets.length + 1;
+
+  bool get allSetsPlayed => completedSets.length >= setsCount;
+
+  /// Un set solo se puede cerrar si no está empatado y hay algún punto.
+  bool get canCloseSet {
+    if (allSetsPlayed) return false;
+    if (homeScore == awayScore) return false;
+    return homeScore > 0 || awayScore > 0;
+  }
 
   MatchTally tallyFor(String userId, MatchAction action) {
     return tallies[(userId: userId, action: action)] ?? const MatchTally();
@@ -56,6 +96,8 @@ class MatchDraft {
   }
 
   MatchDraft copyWith({
+    int? setsCount,
+    List<MatchSet>? completedSets,
     int? homeScore,
     int? awayScore,
     Map<TallyKey, MatchTally>? tallies,
@@ -66,6 +108,8 @@ class MatchDraft {
       awayTeam: awayTeam,
       homePlayers: homePlayers,
       awayPlayers: awayPlayers,
+      setsCount: setsCount ?? this.setsCount,
+      completedSets: completedSets ?? this.completedSets,
       homeScore: homeScore ?? this.homeScore,
       awayScore: awayScore ?? this.awayScore,
       tallies: tallies ?? this.tallies,

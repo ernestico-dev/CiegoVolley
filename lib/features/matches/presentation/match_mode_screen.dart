@@ -24,6 +24,7 @@ class _MatchModeScreenState extends ConsumerState<MatchModeScreen> {
   String? _tournamentId;
   String? _homeTeamId;
   String? _awayTeamId;
+  int _setsCount = 3;
   bool _starting = false;
 
   @override
@@ -93,7 +94,9 @@ class _MatchModeScreenState extends ConsumerState<MatchModeScreen> {
                 tournamentId: _tournamentId,
                 homeTeamId: _homeTeamId,
                 awayTeamId: _awayTeamId,
+                setsCount: _setsCount,
                 starting: _starting,
+                onSetsChanged: (value) => setState(() => _setsCount = value),
                 onTournamentChanged: (id) => setState(() {
                   _tournamentId = id;
                   _homeTeamId = null;
@@ -152,6 +155,7 @@ class _MatchModeScreenState extends ConsumerState<MatchModeScreen> {
             awayTeam: away,
             homePlayers: homePlayers,
             awayPlayers: awayPlayers,
+            setsCount: _setsCount,
           );
 
       if (!mounted) return;
@@ -200,7 +204,7 @@ class _LiveMatchCard extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  '${draft.homeScore} - ${draft.awayScore}',
+                  '${draft.homeSetsWon} - ${draft.awaySetsWon}',
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w800,
                     color: theme.colorScheme.onPrimaryContainer,
@@ -210,7 +214,8 @@ class _LiveMatchCard extends ConsumerWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              '${draft.homeTeam.name} vs ${draft.awayTeam.name}',
+              '${draft.homeTeam.name} vs ${draft.awayTeam.name} · '
+              'set ${draft.currentSet} de ${draft.setsCount}',
               style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onPrimaryContainer,
               ),
@@ -273,7 +278,9 @@ class _SetupCard extends ConsumerWidget {
     required this.tournamentId,
     required this.homeTeamId,
     required this.awayTeamId,
+    required this.setsCount,
     required this.starting,
+    required this.onSetsChanged,
     required this.onTournamentChanged,
     required this.onHomeChanged,
     required this.onAwayChanged,
@@ -284,7 +291,9 @@ class _SetupCard extends ConsumerWidget {
   final String? tournamentId;
   final String? homeTeamId;
   final String? awayTeamId;
+  final int setsCount;
   final bool starting;
+  final ValueChanged<int> onSetsChanged;
   final ValueChanged<String?> onTournamentChanged;
   final ValueChanged<String?> onHomeChanged;
   final ValueChanged<String?> onAwayChanged;
@@ -321,6 +330,8 @@ class _SetupCard extends ConsumerWidget {
               ],
               onChanged: onTournamentChanged,
             ),
+            const SizedBox(height: 16),
+            _SetsSelector(value: setsCount, onChanged: onSetsChanged),
             if (selected == null) ...[
               const SizedBox(height: 12),
               Text(
@@ -478,6 +489,70 @@ class _Dropdown<T> extends StatelessWidget {
           onChanged: onChanged,
         ),
       ),
+    );
+  }
+}
+
+/// Selector de cuántos sets tiene el partido (1 a 5).
+class _SetsSelector extends StatelessWidget {
+  const _SetsSelector({required this.value, required this.onChanged});
+
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(
+              Icons.layers_outlined,
+              size: 18,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                'Sets del partido',
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            Text(
+              value == 1 ? '1 set' : '$value sets',
+              style: theme.textTheme.labelMedium?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          children: [
+            for (var sets = 1; sets <= 5; sets++)
+              ChoiceChip(
+                label: Text('$sets'),
+                selected: value == sets,
+                onSelected: (_) => onChanged(sets),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'Se juega set a set: al cerrar cada uno se guarda su marcador y '
+          'gana el partido quien consiga más sets.',
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
+      ],
     );
   }
 }
