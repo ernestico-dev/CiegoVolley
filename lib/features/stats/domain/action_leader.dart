@@ -8,8 +8,6 @@ class ActionLeader {
     required this.name,
     required this.successes,
     required this.failures,
-    this.neutrals = 0,
-    this.blocked = 0,
   });
 
   final MatchAction action;
@@ -17,17 +15,12 @@ class ActionLeader {
   final String name;
   final int successes;
   final int failures;
-  final int neutrals;
-  final int blocked;
 
-  int get attempts => successes + failures + neutrals + blocked;
+  int get attempts => successes + failures;
 
   int get efficiencyPercent {
     if (attempts == 0) return 0;
-    final numerator = action == MatchAction.attack
-        ? successes - failures - blocked
-        : successes - failures;
-    return (numerator * 100 / attempts).round();
+    return ((successes - failures) * 100 / attempts).round();
   }
 
   int get successPercent => efficiencyPercent;

@@ -187,7 +187,7 @@ class _Charts extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Aciertos y fallos',
+                    'Efectividad',
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -207,7 +207,6 @@ class _Charts extends StatelessWidget {
                       ),
                     ],
                     centerValue: '${player.successPercent}%',
-                    centerLabel: 'éxito',
                   ),
                   const SizedBox(height: 8),
                   LegendItem(
@@ -244,7 +243,6 @@ class _Charts extends StatelessWidget {
                         ),
                     ],
                     centerValue: '${player.attempts}',
-                    centerLabel: 'acciones',
                   ),
                   const SizedBox(height: 8),
                   for (final action in MatchAction.values)

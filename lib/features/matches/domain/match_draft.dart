@@ -8,55 +8,27 @@ typedef TallyKey = ({String userId, MatchAction action});
 
 /// Aciertos y fallos de una acción concreta.
 class MatchTally {
-  const MatchTally({
-    this.successes = 0,
-    this.failures = 0,
-    this.neutrals = 0,
-    this.blocked = 0,
-  });
+  const MatchTally({this.successes = 0, this.failures = 0});
 
   final int successes;
   final int failures;
-  final int neutrals;
-  final int blocked;
 
-  int get total => successes + failures + neutrals + blocked;
+  int get total => successes + failures;
 
-  MatchTally copyWith({
-    int? successes,
-    int? failures,
-    int? neutrals,
-    int? blocked,
-  }) {
+  MatchTally copyWith({int? successes, int? failures}) {
     return MatchTally(
       successes: successes ?? this.successes,
       failures: failures ?? this.failures,
-      neutrals: neutrals ?? this.neutrals,
-      blocked: blocked ?? this.blocked,
     );
   }
 
-  /// Efectividad según la fórmula oficial de cada fundamento.
-  double get serveEfficiency =>
+  /// Efectividad: (aciertos − fallos) sobre el total de intentos.
+  double get efficiency =>
       total == 0 ? 0 : (successes - failures) * 100 / total;
 
-  double get blockEfficiency =>
-      total == 0 ? 0 : (successes - failures) * 100 / total;
+  double efficiencyFor(MatchAction action) => efficiency;
 
-  double get defenseEfficiency =>
-      total == 0 ? 0 : (successes - failures) * 100 / total;
-
-  double get attackEfficiency =>
-      total == 0 ? 0 : (successes - failures - blocked) * 100 / total;
-
-  double efficiencyFor(MatchAction action) => switch (action) {
-    MatchAction.serve => serveEfficiency,
-    MatchAction.attack => attackEfficiency,
-    MatchAction.defense => defenseEfficiency,
-    MatchAction.block => blockEfficiency,
-  };
-
-  int efficiencyPercentFor(MatchAction action) => efficiencyFor(action).round();
+  int efficiencyPercentFor(MatchAction action) => efficiency.round();
 }
 
 /// Puntos de un set ya terminado.

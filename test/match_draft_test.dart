@@ -103,21 +103,17 @@ void main() {
     expect(draft.tallyFor('u2', MatchAction.attack).failures, 1);
   });
 
-  test('registra resultados neutrales y ataques bloqueados', () {
-    controller.register(
-      'u1',
-      MatchAction.serve,
-      outcome: MatchActionOutcome.neutral,
-    );
-    controller.register(
-      'u1',
-      MatchAction.attack,
-      outcome: MatchActionOutcome.blocked,
-    );
+  test('la efectividad usa solo aciertos y fallos', () {
+    controller.register('u1', MatchAction.serve, success: true);
+    controller.register('u1', MatchAction.serve, success: true);
+    controller.register('u1', MatchAction.serve, success: false);
 
-    final draft = container.read(matchDraftProvider)!;
-    expect(draft.tallyFor('u1', MatchAction.serve).neutrals, 1);
-    expect(draft.tallyFor('u1', MatchAction.attack).blocked, 1);
+    final tally = container
+        .read(matchDraftProvider)!
+        .tallyFor('u1', MatchAction.serve);
+
+    expect(tally.total, 3);
+    expect(tally.efficiencyPercentFor(MatchAction.serve), 33);
   });
 
   test('reiniciar deja el marcador y las estadísticas a cero', () {

@@ -221,7 +221,7 @@ class PlayerStatsPage extends StatelessWidget {
               child: Column(
                 children: [
                   Text(
-                    'Aciertos y fallos',
+                    'Efectividad',
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -242,7 +242,6 @@ class PlayerStatsPage extends StatelessWidget {
                       ),
                     ],
                     centerValue: '${player.successPercent}%',
-                    centerLabel: 'éxito',
                   ),
                   const SizedBox(height: 6),
                   LegendItem(
@@ -280,7 +279,6 @@ class PlayerStatsPage extends StatelessWidget {
                         ),
                     ],
                     centerValue: '${player.attempts}',
-                    centerLabel: 'acciones',
                   ),
                   const SizedBox(height: 6),
                   for (final action in MatchAction.values)

@@ -107,19 +107,19 @@ class _MatchScreenState extends ConsumerState<MatchScreen> {
                         player: selected.player,
                         teamName: selected.teamName,
                         draft: draft,
-                        onRegister: (action, {required outcome}) => ref
+                        onRegister: (action, {required success}) => ref
                             .read(matchDraftProvider.notifier)
                             .register(
                               selected.player.userId,
                               action,
-                              outcome: outcome,
+                              success: success,
                             ),
-                        onUndo: (action, {required outcome}) => ref
+                        onUndo: (action, {required success}) => ref
                             .read(matchDraftProvider.notifier)
                             .undo(
                               selected.player.userId,
                               action,
-                              outcome: outcome,
+                              success: success,
                             ),
                         onClose: () => setState(() => _selectedUserId = null),
                       ),

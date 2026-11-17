@@ -2,31 +2,20 @@ import '../../matches/domain/match_action.dart';
 
 /// Aciertos y fallos de una acción concreta.
 class ActionTally {
-  const ActionTally({
-    this.successes = 0,
-    this.failures = 0,
-    this.neutrals = 0,
-    this.blocked = 0,
-  });
+  const ActionTally({this.successes = 0, this.failures = 0});
 
   final int successes;
   final int failures;
-  final int neutrals;
-  final int blocked;
 
-  int get total => successes + failures + neutrals + blocked;
+  int get total => successes + failures;
 
   int get successPercent {
     if (total == 0) return 0;
     return (successes * 100 / total).round();
   }
 
-  double efficiencyFor(MatchAction action) => switch (action) {
-    MatchAction.serve => _percent(successes - failures),
-    MatchAction.attack => _percent(successes - failures - blocked),
-    MatchAction.defense => _percent(successes - failures),
-    MatchAction.block => _percent(successes - failures),
-  };
+  /// Efectividad: (aciertos − fallos) sobre el total de intentos.
+  double efficiencyFor(MatchAction action) => _percent(successes - failures);
 
   int efficiencyPercentFor(MatchAction action) => efficiencyFor(action).round();
 

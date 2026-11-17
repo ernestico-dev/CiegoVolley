@@ -1,5 +1,10 @@
--- Añade resultados neutrales y bloqueados para aplicar las fórmulas oficiales
--- de efectividad de saque, ataque, defensa y bloqueo.
+-- CiegoVolley · limpieza de resultados de acciones
+--
+-- Las acciones se guardan solo como aciertos y fallos. Un ataque bloqueado es
+-- un fallo de ataque para quien ataca y un acierto de bloqueo para quien
+-- bloquea. Si una versión anterior añadió columnas de neutros o bloqueados,
+-- se eliminan para que no influyan en las fórmulas.
+
 alter table public.match_player_stats
-  add column if not exists neutrals int not null default 0 check (neutrals >= 0),
-  add column if not exists blocked int not null default 0 check (blocked >= 0);
+  drop column if exists neutrals,
+  drop column if exists blocked;

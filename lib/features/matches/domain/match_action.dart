@@ -17,6 +17,3 @@ enum MatchAction {
     return null;
   }
 }
-
-/// Resultados posibles al registrar una acción.
-enum MatchActionOutcome { positive, error, neutral, blocked }
