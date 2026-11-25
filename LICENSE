@@ -1,0 +1,99 @@
+LICENCIA DE USO — TODOS LOS DERECHOS RESERVADOS
+================================================
+
+Copyright (c) 2026 Ing. Ernesto Carbonell Paz. Todos los derechos reservados.
+
+Este repositorio y todo su contenido —incluyendo, sin limitarse a, el código
+fuente, los archivos de configuración, el esquema de base de datos, la
+documentación, los textos, las imágenes y los recursos gráficos (en adelante,
+"el Software")— es propiedad exclusiva del titular del copyright indicado
+arriba.
+
+El Software se publica de forma visible en un repositorio público únicamente
+con fines de consulta, demostración y evaluación. La visibilidad del código no
+constituye una cesión, renuncia ni licencia de ningún derecho de propiedad
+intelectual.
+
+
+1. USOS PERMITIDOS
+
+   a) Consultar, leer y estudiar el código fuente.
+   b) Clonar o descargar el repositorio para uso personal y privado, siempre
+      que no se realice ninguna de las acciones prohibidas en la sección 2.
+   c) Citar el proyecto y enlazar al repositorio original.
+
+
+2. USOS PROHIBIDOS
+
+   Sin autorización previa y por escrito del titular del copyright, queda
+   expresamente prohibido:
+
+   a) Copiar, reproducir o reutilizar total o parcialmente el código fuente o
+      cualquier otro contenido del Software en proyectos propios o de
+      terceros.
+   b) Modificar, adaptar, traducir o crear obras derivadas.
+   c) Distribuir, publicar, sublicenciar, vender, alquilar o poner a
+      disposición de terceros el Software o cualquier obra derivada.
+   d) Usar el Software, total o parcialmente, con fines comerciales, incluida
+      su integración en productos o servicios ofrecidos a terceros.
+   e) Retirar, ocultar o alterar este aviso de copyright o esta licencia.
+   f) Usar el nombre, el logotipo o las marcas del proyecto o de su titular
+      sin consentimiento expreso.
+
+
+3. CONTRIBUCIONES
+
+   Cualquier contribución enviada al repositorio (pull requests, parches,
+   sugerencias de código) se entenderá cedida al titular del copyright en
+   régimen de exclusividad y sin contraprestación, salvo pacto escrito en
+   contrario.
+
+
+4. SOFTWARE DE TERCEROS
+
+   El Software utiliza dependencias de terceros que se distribuyen bajo sus
+   propias licencias. Dichas licencias prevalecen sobre esta para esos
+   componentes. Consulta `pubspec.yaml` y `pubspec.lock` para conocer las
+   dependencias utilizadas.
+
+
+5. EXENCIÓN DE GARANTÍA
+
+   EL SOFTWARE SE PROPORCIONA "TAL CUAL", SIN GARANTÍA DE NINGÚN TIPO, EXPRESA
+   O IMPLÍCITA, INCLUYENDO, SIN LIMITARSE A, LAS GARANTÍAS DE COMERCIABILIDAD,
+   IDONEIDAD PARA UN FIN DETERMINADO Y NO INFRACCIÓN. EN NINGÚN CASO EL
+   TITULAR DEL COPYRIGHT SERÁ RESPONSABLE DE NINGUNA RECLAMACIÓN, DAÑO O PERJUICIO,
+   YA SEA EN ACCIÓN CONTRACTUAL, EXTRACONTRACTUAL O DE OTRO TIPO, DERIVADO DEL
+   SOFTWARE O DE SU USO.
+
+
+6. TERMINACIÓN
+
+   Cualquier incumplimiento de esta licencia extingue automáticamente los
+   permisos concedidos en la sección 1, sin perjuicio de las acciones legales
+   que correspondan al titular.
+
+
+7. CONTACTO Y PERMISOS
+
+   Para solicitar una autorización de uso, una licencia comercial u obtener
+   aclaraciones sobre estos términos:
+
+     Titular: Ing. Ernesto Carbonell Paz
+     Correo:  ecpkiko2002@gmail.com
+     Repo:    https://github.com/ernestico-dev/CiegoVolley
+
+
+--------------------------------------------------------------------------------
+
+ENGLISH SUMMARY (non-binding)
+
+Copyright (c) 2026 Ing. Ernesto Carbonell Paz. All rights reserved.
+
+This repository is source-available for viewing and evaluation only. No license
+or right is granted to copy, modify, distribute, sublicense, sell or use this
+software or any part of it, including for commercial purposes, without prior
+written permission from the copyright holder. The software is provided "as is",
+without warranty of any kind. Third-party dependencies remain under their own
+licenses. This summary is for convenience; the Spanish text above is the
+binding version.

@@ -89,6 +89,15 @@ Cada feature sigue el mismo patrón: `domain/` (modelos), `data/`
 - Generación de calendario y actas de torneos.
 - Tests de widgets por feature.
 
+## Licencia
+
+**Todos los derechos reservados.** Este repositorio es público únicamente para
+consulta y evaluación: no se concede permiso para copiar, modificar,
+distribuir ni usar el código, total o parcialmente, sin autorización previa por
+escrito. Consulta el archivo [LICENSE](LICENSE) para los términos completos.
+
+Para permisos de uso o licencias comerciales: ecpkiko2002@gmail.com.
+
 ## Comandos útiles
 
 ```bash
